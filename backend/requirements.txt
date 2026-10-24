@@ -6,6 +6,7 @@ pydantic-settings>=2.2.0
 python-dotenv>=1.0.1
 python-multipart>=0.0.9
 httpx>=0.27.0
+openai>=1.30.0
 
 # LangChain & AI framework
 langchain>=0.2.0

@@ -7,7 +7,7 @@ export interface Citation {
   location: string; // e.g. "Page 3", "Timestamp 10:14", "Line 42"
   snippet: string;
   confidence: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface TimelineEvent {

@@ -73,7 +73,7 @@ export default function Home() {
   ];
 
   const handleSendMessage = async (query: string, attachedFiles?: string[]) => {
-    const userMsgId = `user-${Date.now()}`;
+    const userMsgId = `user-${crypto.randomUUID()}`;
     const userMessage: ChatMessageType = {
       id: userMsgId,
       role: 'user',
@@ -85,7 +85,7 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage]);
     setIsInvestigating(true);
 
-    const startTime = Date.now();
+    const startTime = new Date().getTime();
 
     // Connect to live FastAPI backend at http://localhost:8000
     try {
@@ -98,9 +98,9 @@ export default function Home() {
 
       if (response.ok) {
         const liveReport = await response.json();
-        const durationMs = Date.now() - startTime;
+        const durationMs = new Date().getTime() - startTime;
         const assistantMessage: ChatMessageType = {
-          id: `assistant-${Date.now()}`,
+          id: `assistant-${crypto.randomUUID()}`,
           role: 'assistant',
           content: liveReport.likely_root_cause || (liveReport.is_abstention ? liveReport.abstention_reason || '' : 'Investigation completed.'),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -136,7 +136,7 @@ export default function Home() {
           setMessages((prev) => [
             ...prev,
             {
-              id: `assistant-${Date.now()}`,
+              id: `assistant-${crypto.randomUUID()}`,
               role: 'assistant',
               content: errMsg,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -149,7 +149,7 @@ export default function Home() {
         }, 500);
         return;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Clean context-aware error without leaking code or injecting sample evidence
       let errorTitle = 'Service Unreachable';
       let errorMessage = 'Unable to connect to the investigation service. Please verify your connection or try again.';
@@ -157,7 +157,7 @@ export default function Home() {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         errorTitle = "You're Offline";
         errorMessage = 'Please check your internet connection and try again.';
-      } else if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+      } else if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
         errorTitle = 'Request Timed Out';
         errorMessage = 'The investigation took longer than expected to complete. Please try asking again.';
       }
@@ -165,7 +165,7 @@ export default function Home() {
       // In case of an error, strictly present the error message with a retry option — no sample evidence
       setTimeout(() => {
         const assistantErrorMessage: ChatMessageType = {
-          id: `assistant-${Date.now()}`,
+          id: `assistant-${crypto.randomUUID()}`,
           role: 'assistant',
           content: errorMessage,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
