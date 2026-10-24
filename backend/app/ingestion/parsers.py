@@ -127,22 +127,84 @@ def _parse_html(path: Path) -> list[dict[str, Any]]:
     for element in soup(["script", "style", "nav", "footer", "header", "noscript", "svg"]):
         element.decompose()
     main = soup.find("main") or soup.find("article") or soup.body or soup
+    elements = main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote", "table"])
+    page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
+    h1 = main.find("h1")
+    intro_section = h1.get_text(" ", strip=True) if h1 else page_title
+
+    def element_text(element: Any) -> str:
+        if element.name == "table":
+            return " | ".join(
+                cell.get_text(" ", strip=True)
+                for cell in element.find_all(["th", "td"])
+            )
+        return element.get_text(" ", strip=True)
+
+    def section_unit(
+        text_parts: list[str],
+        section: str,
+        html_id: str,
+    ) -> dict[str, Any] | None:
+        return _text_unit(
+            " ".join(part for part in text_parts if part),
+            {"section": section or "Webpage content", "html_id": html_id},
+        )
+
+    h2_elements = [element for element in elements if element.name == "h2"]
+    if not h2_elements:
+        unit = section_unit(
+            [element_text(element) for element in elements],
+            intro_section,
+            "intro",
+        )
+        return [unit] if unit else []
+
     units: list[dict[str, Any]] = []
-    heading = soup.title.get_text(" ", strip=True) if soup.title else ""
-    for element in main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote", "table"]):
-        if element.name in {"h1", "h2", "h3", "h4"}:
-            heading = element.get_text(" ", strip=True)
-            content = heading
-        elif element.name == "table":
-            content = " | ".join(cell.get_text(" ", strip=True) for cell in element.find_all(["th", "td"]))
-        else:
-            content = element.get_text(" ", strip=True)
-        unit = _text_unit(content, {
-            "section": heading or "Webpage content",
-            "html_id": element.get("id"),
-        })
+    current_group: list[Any] = []
+    current_heading = ""
+    current_id = ""
+
+    def add_group() -> None:
+        unit = section_unit(
+            [element_text(element) for element in current_group],
+            current_heading,
+            current_id,
+        )
         if unit:
             units.append(unit)
+
+    for element in elements:
+        if element.name == "h2":
+            if current_heading:
+                add_group()
+            current_heading = element_text(element)
+            current_id = element.get("id") or re.sub(
+                r"\s+",
+                "-",
+                re.sub(r"[^a-z0-9 ]", "", current_heading.lower()),
+            )
+            current_group = [element]
+        elif current_heading:
+            current_group.append(element)
+
+    if current_heading:
+        add_group()
+
+    first_h2_index = next(
+        index for index, element in enumerate(elements)
+        if element is h2_elements[0]
+    )
+    intro_elements = elements[:first_h2_index]
+    intro_texts = [element_text(element) for element in intro_elements]
+    intro_content = [
+        text for element, text in zip(intro_elements, intro_texts)
+        if element is not h1 and text
+    ]
+    if intro_content:
+        intro_unit = section_unit(intro_texts, intro_section, "intro")
+        if intro_unit:
+            units.insert(0, intro_unit)
+
     return units
 
 
