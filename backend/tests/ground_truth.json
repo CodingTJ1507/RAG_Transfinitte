@@ -1,68 +1,12 @@
 {
-  "version": "1.0.0",
-  "incident_id": "INC-2026-PAY-001",
-  "title": "Payment Service Failure Post-Deployment v2.4.0",
-  "eval_benchmarks": [
-    {
-      "test_id": "TEST-01-CROSS-SOURCE",
-      "category": "Cross-source reasoning",
-      "query": "Why did payment failures begin after the deployment?",
-      "required_source_types": [
-        "structured_record",
-        "webpage",
-        "document",
-        "image",
-        "transcript"
-      ],
-      "expected_findings": [
-        "Deployment of version 2.4.0 at 10:02 AM",
-        "Spike in payment failure errors starting at 10:07 AM in structured logs",
-        "Release notes for v2.4.0 show required field 'idempotency_key' format migration",
-        "API specification required schema mismatch with incoming legacy request payloads",
-        "Transcript notes engineer observed configuration mismatch during rollout"
-      ],
-      "requires_abstention": false
-    },
-    {
-      "test_id": "TEST-02-EXACT-LOOKUP",
-      "category": "Exact technical lookup",
-      "query": "Find every occurrence of error code PAY-401 and compare the affected versions.",
-      "required_source_types": [
-        "structured_record"
-      ],
-      "expected_findings": [
-        "Matches in payment_service.log with error code PAY-401",
-        "Occurrences tied specifically to service version 2.4.0",
-        "Absence of PAY-401 in version 2.3.9 records"
-      ],
-      "requires_abstention": false
-    },
-    {
-      "test_id": "TEST-03-CONFLICTING-EVIDENCE",
-      "category": "Conflicting evidence reasoning",
-      "query": "The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?",
-      "required_source_types": [
-        "document",
-        "image"
-      ],
-      "expected_findings": [
-        "Identify direct contradiction between Runbook v1.8 and Architecture Diagram v2.2",
-        "Inspect version timestamps: Diagram was updated more recently than Runbook",
-        "Avoid picking a winner without sufficient operational confirmation and flag the discrepancy"
-      ],
-      "requires_abstention": false
-    },
-    {
-      "test_id": "TEST-04-UNANSWERABLE",
-      "category": "Evidence-based abstention",
-      "query": "Which engineer secretly caused the outage, and what exact line of code did they change?",
-      "required_source_types": [],
-      "expected_findings": [
-        "Refuse to make unfounded accusations or invent author names",
-        "Explicitly state that available records (logs, specs, transcripts) do not attribute intent or line-level source diffs",
-        "Specify missing evidence: Git commit blame, pull request audit log, CI/CD actor metadata"
-      ],
-      "requires_abstention": true
-    }
-  ]
+  "version": "2.0.0",
+  "incident_id": "INC-2026-1042",
+  "authoritative_files": {
+    "questions": "backend/synthetic_data/evaluation/questions.json",
+    "expected_sources": "backend/synthetic_data/evaluation/expected_sources.json",
+    "answers_and_claim_support": "backend/synthetic_data/evaluation/answer_key.json",
+    "claim_evidence": "backend/synthetic_data/metadata/claims_ledger.json",
+    "source_metadata": "backend/synthetic_data/metadata/source_manifest.json"
+  },
+  "note": "The former fixture described INC-2026-PAY-001 and claims not represented in the actual dataset. The dataset's evaluation and metadata files are authoritative; this file records the canonical incident and their locations."
 }
