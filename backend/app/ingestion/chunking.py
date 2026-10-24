@@ -24,6 +24,12 @@ def _split_text(text: str, size: int, overlap: int) -> list[tuple[str, int]]:
     ]
 
 
+def _chunk_owner(record: Any, source_owner: str | None, service_owners: dict[str, str]) -> str | None:
+    """A record belongs to its own service's team; any other unit to the source owner."""
+    service = (record.get("service") or record.get("client_service")) if isinstance(record, dict) else None
+    return service_owners.get(service, "Unassigned") if service else source_owner
+
+
 def chunk_evidence_units(
     units: list[dict[str, Any]],
     source: dict[str, Any],
@@ -44,15 +50,7 @@ def chunk_evidence_units(
             continue
         unit_metadata = unit.get("metadata") or {}
         record = unit_metadata.get("record", {})
-        owner = source.get("owner")
-        if isinstance(record, dict):
-            record_service = record.get("service") or record.get("client_service")
-            if record_service:
-                owner = (
-                    service_owners.get(record_service, "Unassigned")
-                    if isinstance(record_service, str)
-                    else "Unassigned"
-                )
+        owner = _chunk_owner(record, source.get("owner"), service_owners)
         identifiers: dict[str, list[str]] = {}
         identifier_fields = {
             "error_code", "request_id", "trace_id", "log_id", "event_id",
