@@ -4,7 +4,112 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Play, RefreshCw, CheckCircle2, XCircle, AlertCircle, Loader2, BarChart3, Check } from 'lucide-react';
 import { API_BASE_URL } from '../../lib/api';
-import { EvaluationReport } from '../../lib/types';
+import { EvaluationReport, EvaluationCaseResult } from '../../lib/types';
+
+function MetricTile({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
+      <span className="text-[11px] font-medium text-slate-500 block">{label}</span>
+      <span className="text-2xl font-bold text-[#162748] mt-1 block">{value}</span>
+      <span className="text-[10px] text-slate-400">{hint}</span>
+    </div>
+  );
+}
+
+function ResultRow({
+  row,
+  toPct,
+}: {
+  row: EvaluationCaseResult;
+  toPct: (val?: number | null) => string;
+}) {
+  const expectedSet = new Set(row.expected_source_ids);
+  const retrievedSet = new Set(row.retrieved_source_ids);
+  const missingExpected = row.expected_source_ids.filter((s) => !retrievedSet.has(s));
+
+  return (
+    <tr className="hover:bg-slate-50/60 transition-colors">
+      <td className="py-2 px-3 font-mono font-bold text-[#162748]">{row.question_id}</td>
+      <td className="py-2 px-3 text-slate-600 capitalize">{row.category.replace('_', ' ')}</td>
+      <td className="py-2 px-2 text-center">
+        {row.hit ? (
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 inline" />
+        ) : (
+          <XCircle className="w-4 h-4 text-rose-500 inline" />
+        )}
+      </td>
+      <td className="py-2 px-2 text-right font-mono text-slate-700">{toPct(row.recall_at_k)}</td>
+      <td className="py-2 px-2 text-right font-mono text-slate-700">{toPct(row.ndcg_at_k)}</td>
+      <td className="py-2 px-2 text-right font-mono text-slate-700">{toPct(row.reciprocal_rank)}</td>
+      <td className="py-2 px-2 text-center">
+        {row.passed ? (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+            PASS
+          </span>
+        ) : (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-rose-50 text-rose-700 border border-rose-200">
+            FAIL
+          </span>
+        )}
+      </td>
+      <td className="py-2 px-3 space-y-1 max-w-sm">
+        <div className="flex flex-wrap gap-1 items-center">
+          <span className="text-[10px] text-slate-400 font-mono">Exp:</span>
+          {row.expected_source_ids.map((src) => {
+            const isMissing = missingExpected.includes(src);
+            return (
+              <span
+                key={src}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                  isMissing
+                    ? 'bg-rose-50 text-rose-700 border-rose-300 font-bold'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                }`}
+                title={isMissing ? 'Missing from retrieved top-k' : 'Retrieved'}
+              >
+                {src}
+              </span>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap gap-1 items-center">
+          <span className="text-[10px] text-slate-400 font-mono">Got:</span>
+          {row.retrieved_source_ids.slice(0, 5).map((src) => (
+            <span
+              key={src}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+                expectedSet.has(src)
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-200'
+              }`}
+            >
+              {src}
+            </span>
+          ))}
+          {row.retrieved_source_ids.length > 5 && (
+            <span className="text-[10px] text-slate-400 font-mono">
+              +{row.retrieved_source_ids.length - 5} more
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="py-2 px-3 text-slate-500 max-w-xs">
+        {row.failure_reasons.length > 0 ? (
+          <ul className="list-disc pl-3 text-[11px] text-rose-600 space-y-0.5">
+            {row.failure_reasons.map((reason, idx) => (
+              <li key={idx}>{reason}</li>
+            ))}
+          </ul>
+        ) : (
+          <span className="text-[11px] text-emerald-600 flex items-center space-x-1">
+            <Check className="w-3 h-3" />
+            <span>Passed all checks</span>
+          </span>
+        )}
+      </td>
+    </tr>
+  );
+}
 
 export default function BenchmarkPage() {
   const [report, setReport] = useState<EvaluationReport | null>(null);
@@ -18,10 +123,6 @@ export default function BenchmarkPage() {
     try {
       const url = `${API_BASE_URL}/api/eval/benchmark?top_k=10${checkAnswers ? '&generate_answers=true' : ''}`;
       const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         signal: AbortSignal.timeout(120000),
       });
 
@@ -197,54 +298,37 @@ export default function BenchmarkPage() {
           <div className="space-y-6">
             {/* Aggregate Score Tiles */}
             <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
-                <span className="text-[11px] font-medium text-slate-500 block">Hit Rate</span>
-                <span className="text-2xl font-bold text-[#162748] mt-1 block">
-                  {toPct(report.aggregate.hit_rate)}
-                </span>
-                <span className="text-[10px] text-slate-400">top-k hit fraction</span>
-              </div>
-
-              <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
-                <span className="text-[11px] font-medium text-slate-500 block">Mean Recall</span>
-                <span className="text-2xl font-bold text-[#162748] mt-1 block">
-                  {toPct(report.aggregate.mean_recall_at_k)}
-                </span>
-                <span className="text-[10px] text-slate-400">required sources</span>
-              </div>
-
-              <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
-                <span className="text-[11px] font-medium text-slate-500 block">MRR</span>
-                <span className="text-2xl font-bold text-[#162748] mt-1 block">
-                  {toPct(report.aggregate.mean_reciprocal_rank)}
-                </span>
-                <span className="text-[10px] text-slate-400">reciprocal rank</span>
-              </div>
-
-              <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
-                <span className="text-[11px] font-medium text-slate-500 block">Mean nDCG</span>
-                <span className="text-2xl font-bold text-[#162748] mt-1 block">
-                  {toPct(report.aggregate.mean_ndcg_at_k)}
-                </span>
-                <span className="text-[10px] text-slate-400">discounted gain</span>
-              </div>
-
-              <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
-                <span className="text-[11px] font-medium text-slate-500 block">Pass Rate</span>
-                <span className="text-2xl font-bold text-[#162748] mt-1 block">
-                  {toPct(report.aggregate.pass_rate)}
-                </span>
-                <span className="text-[10px] text-slate-400">{report.cases_run} test cases</span>
-              </div>
-
+              <MetricTile
+                label="Hit Rate"
+                value={toPct(report.aggregate.hit_rate)}
+                hint="top-k hit fraction"
+              />
+              <MetricTile
+                label="Mean Recall"
+                value={toPct(report.aggregate.mean_recall_at_k)}
+                hint="required sources"
+              />
+              <MetricTile
+                label="MRR"
+                value={toPct(report.aggregate.mean_reciprocal_rank)}
+                hint="reciprocal rank"
+              />
+              <MetricTile
+                label="Mean nDCG"
+                value={toPct(report.aggregate.mean_ndcg_at_k)}
+                hint="discounted gain"
+              />
+              <MetricTile
+                label="Pass Rate"
+                value={toPct(report.aggregate.pass_rate)}
+                hint={`${report.cases_run} test cases`}
+              />
               {report.aggregate.mean_faithfulness !== undefined && (
-                <div className="bg-white rounded-xl border border-[#dde4ec] p-4 shadow-2xs">
-                  <span className="text-[11px] font-medium text-slate-500 block">Faithfulness</span>
-                  <span className="text-2xl font-bold text-[#162748] mt-1 block">
-                    {toPct(report.aggregate.mean_faithfulness)}
-                  </span>
-                  <span className="text-[10px] text-slate-400">verified claims</span>
-                </div>
+                <MetricTile
+                  label="Faithfulness"
+                  value={toPct(report.aggregate.mean_faithfulness)}
+                  hint="verified claims"
+                />
               )}
             </section>
 
@@ -272,94 +356,9 @@ export default function BenchmarkPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#dde4ec]">
-                    {report.results.map((row) => {
-                      const expectedSet = new Set(row.expected_source_ids);
-                      const retrievedSet = new Set(row.retrieved_source_ids);
-                      const missingExpected = row.expected_source_ids.filter((s) => !retrievedSet.has(s));
-
-                      return (
-                        <tr key={row.question_id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="py-2 px-3 font-mono font-bold text-[#162748]">{row.question_id}</td>
-                          <td className="py-2 px-3 text-slate-600 capitalize">{row.category.replace('_', ' ')}</td>
-                          <td className="py-2 px-2 text-center">
-                            {row.hit ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 inline" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-rose-500 inline" />
-                            )}
-                          </td>
-                          <td className="py-2 px-2 text-right font-mono text-slate-700">{toPct(row.recall_at_k)}</td>
-                          <td className="py-2 px-2 text-right font-mono text-slate-700">{toPct(row.ndcg_at_k)}</td>
-                          <td className="py-2 px-2 text-right font-mono text-slate-700">{toPct(row.reciprocal_rank)}</td>
-                          <td className="py-2 px-2 text-center">
-                            {row.passed ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                PASS
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-rose-50 text-rose-700 border border-rose-200">
-                                FAIL
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2 px-3 space-y-1 max-w-sm">
-                            <div className="flex flex-wrap gap-1 items-center">
-                              <span className="text-[10px] text-slate-400 font-mono">Exp:</span>
-                              {row.expected_source_ids.map((src) => {
-                                const isMissing = missingExpected.includes(src);
-                                return (
-                                  <span
-                                    key={src}
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
-                                      isMissing
-                                        ? 'bg-rose-50 text-rose-700 border-rose-300 font-bold'
-                                        : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                    }`}
-                                    title={isMissing ? 'Missing from retrieved top-k' : 'Retrieved'}
-                                  >
-                                    {src}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                            <div className="flex flex-wrap gap-1 items-center">
-                              <span className="text-[10px] text-slate-400 font-mono">Got:</span>
-                              {row.retrieved_source_ids.slice(0, 5).map((src) => (
-                                <span
-                                  key={src}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
-                                    expectedSet.has(src)
-                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                      : 'bg-slate-100 text-slate-600 border-slate-200'
-                                  }`}
-                                >
-                                  {src}
-                                </span>
-                              ))}
-                              {row.retrieved_source_ids.length > 5 && (
-                                <span className="text-[10px] text-slate-400 font-mono">
-                                  +{row.retrieved_source_ids.length - 5} more
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-2 px-3 text-slate-500 max-w-xs">
-                            {row.failure_reasons.length > 0 ? (
-                              <ul className="list-disc pl-3 text-[11px] text-rose-600 space-y-0.5">
-                                {row.failure_reasons.map((reason, idx) => (
-                                  <li key={idx}>{reason}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <span className="text-[11px] text-emerald-600 flex items-center space-x-1">
-                                <Check className="w-3 h-3" />
-                                <span>Passed all checks</span>
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {report.results.map((row) => (
+                      <ResultRow key={row.question_id} row={row} toPct={toPct} />
+                    ))}
                   </tbody>
                 </table>
               </div>
