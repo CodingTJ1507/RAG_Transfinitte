@@ -1,238 +1,285 @@
-# TraceIQ
+<div align="center">
 
-TraceIQ is an evidence-grounded engineering incident investigation application. It
-indexes a focused, fictional payment-service incident collection and answers questions
-with source-backed findings, exact locators, timelines, conflict handling, and explicit
-abstention.
+<img src="frontend/public/concord-logo.svg" alt="Concord.ai" height="72">
 
-The implementation follows the supplied
-[`MongoDB_RAG_Architecture_Reference.pdf`](./MongoDB_RAG_Architecture_Reference.pdf).
+### Evidence-grounded incident investigation on MongoDB Atlas Vector Search
+
+Ask a question about an engineering incident. Concord.ai searches every document, changelog,
+metric graph, meeting transcript and log you gave it, and answers only with claims it can cite.
+
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)
+![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas%20Vector%20Search-47A248?logo=mongodb&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash-8E75B2?logo=googlegemini&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
+
+<img src="docs/images/concord-home.png" alt="Concord.ai investigation screen" width="900">
+
+</div>
+
+## Contents
+
+- [Why Concord.ai](#why-concordai)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Demo dataset](#demo-dataset)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [API](#api)
+- [Evaluation](#evaluation)
+- [Tests](#tests)
+- [Project structure](#project-structure)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Team](#team)
+- [Limitations](#limitations)
+
+## Why Concord.ai
+
+During an incident, the evidence is spread across a runbook PDF, a release changelog, a metric
+screenshot, a meeting transcript and thousands of log lines. A general chatbot will happily
+guess. Concord.ai does not: every claim in an answer points at the exact page, heading, cue,
+row or log line it came from, a second model checks each claim against that text, and when
+nothing verifies, Concord.ai says it does not know.
+
+## Features
+
+- **Multi-source ingestion**: PDF, DOCX, Markdown, HTML, TXT, VTT transcripts, JSON and CSV logs,
+  and images, each parsed with its structural locator (page, heading, cue, row, event).
+- **Hybrid retrieval**: Atlas Vector Search (semantic), Atlas Search BM25 (keywords) and an
+  exact-identifier lookup (error codes, versions, ticket IDs), fused with reciprocal rank fusion.
+- **Grounded answers**: Gemini answers only from a registry of retrieved chunks, and an
+  independent Gemini verifier checks every cited claim.
+- **Abstention**: an unanswerable question gets a clear "not enough evidence", never a guess.
+- **Metadata filters**: incident, source type, version, owner and time range, applied inside
+  the search, not after it.
+- **Projects**: each incident is its own project; sources are stored once and reused.
+- **Built-in benchmark**: Recall@k, MRR, nDCG, precision, hit rate and faithfulness on a
+  labelled question set.
 
 ## Architecture
 
-The implementation follows the MongoDB RAG architecture reference's modular layers:
+```mermaid
+flowchart LR
+    U[Upload or demo dataset] --> P[Parsers<br/>per source type]
+    P --> C[Chunking<br/>500 tokens, 60 overlap]
+    C --> E[Gemini embeddings<br/>768-dim]
+    E --> M[(MongoDB Atlas<br/>sources + chunks)]
+    M --> V[Vector index]
+    M --> S[BM25 search index]
+    Q[Question] --> T[Query normalise<br/>and decompose]
+    T --> V & S & X[Exact identifier lookup]
+    V & S & X --> F[Reciprocal rank fusion<br/>k = 60]
+    F --> R[Evidence registry]
+    R --> G[Gemini answer]
+    G --> K[Independent verifier]
+    K --> A[Cited report<br/>or abstention]
+```
 
 | Layer | Location | Responsibility |
-|---|---|---|
-| Ingestion | `backend/app/ingestion/` | Parse PDF, DOCX, Markdown, HTML, VTT, text, JSON, CSV, and image metadata while retaining structural locators; recursively split oversized evidence units. |
-| Services | `backend/app/services/` | Gemini text embeddings, Gemini grounded generation and independent citation verification, and idempotent dataset ingestion. |
-| Core | `backend/app/core/` | MongoDB Atlas connections, operational indexes, collection access, and vector/Atlas Search readiness. |
-| Retrieval | `backend/app/retrieval/` | Filtered Atlas ANN vector search, Atlas Search BM25, exact identifier lookup, and Reciprocal Rank Fusion (RRF). |
-| Reasoning and API | `backend/app/reasoning/`, `backend/app/api/` | Query normalization/decomposition, evidence registry, grounded claims, post-generation verification, abstention, evaluation, and FastAPI endpoints. |
+| :--- | :--- | :--- |
+| Ingestion | `backend/app/ingestion/` | Parse each source type, keep locators, split oversized units |
+| Services | `backend/app/services/` | Gemini embeddings, generation, verification; idempotent ingestion |
+| Core | `backend/app/core/` | MongoDB connection, operational indexes, search-index readiness |
+| Retrieval | `backend/app/retrieval/` | Vector search, BM25, identifier lookup, RRF |
+| Reasoning | `backend/app/reasoning/` | Query transform, evidence registry, claims, verification, abstention |
+| API | `backend/app/api/` | FastAPI routes for ingest, investigate and eval |
+| UI | `frontend/src/` | Next.js investigation console with citations and filters |
 
-### Query and ingestion flow
+Every chunk is stored with its text, embedding, content hash, source metadata and locator in one
+document, so a single Atlas query can filter and rank it. Chunk IDs are deterministic, which
+makes re-ingestion repeat-safe. The browser only talks to FastAPI; the MongoDB URI and Gemini key
+never leave the backend.
 
-1. Ingestion reads `backend/synthetic_data/metadata/source_manifest.json`, validates
-   source paths and hashes, parses content into evidence units, and preserves page,
-   heading, cue, row, event, log, and record locators.
-2. Structured evidence units remain intact when possible. Oversized units use
-   LangChain's recursive character splitter with a tiktoken-based 500-token target and
-   60-token overlap. Each chunk has a deterministic ID and SHA-256 content hash.
-3. Gemini generates `RETRIEVAL_DOCUMENT` embeddings. MongoDB upserts chunks by
-deterministic chunk ID (derived from source version, locator, position, and content
-hash), preserving repeated passages at distinct source locations. It stores text,
-content hashes, embeddings, timestamps, identifiers, source metadata, and locators
-together.
-4. Investigation normalizes common abbreviations and decomposes multi-part queries.
-   For each query it independently retrieves from Atlas Vector Search, Atlas Search
-   BM25, and indexed exact identifier fields, then combines the ranked lists with RRF
-   (`k=60`). Supported incident, source-type, version, owner, and time filters are
-   applied at retrieval time.
-5. A structured evidence registry is passed to Gemini as untrusted evidence. The
-   generated answer claims cite only retrieved chunk IDs. A separate Gemini verifier
-   checks each cited claim against the cited text; unsupported or contradicted claims
-   are not presented as verified answers. Missing or unverifiable evidence causes
-   structured abstention.
-6. The frontend calls FastAPI only; MongoDB credentials and the Gemini key stay on the
-   backend.
+## Tech stack
 
-MongoDB stores original source metadata, chunks, embeddings, stable source/chunk IDs,
-and ingestion run records in the configured database. Atlas Vector Search uses ANN
-cosine search; Atlas Search provides lexical BM25 retrieval; application-level RRF is
-used as a compatible fallback instead of requiring a particular Atlas `$rankFusion`
-deployment.
+| Area | Choice |
+| :--- | :--- |
+| Backend | Python 3.12, FastAPI, Pydantic Settings |
+| Database | MongoDB Atlas: Vector Search (cosine, 768-dim) and Atlas Search (BM25) |
+| Models | Gemini 2.5 Flash (answer and verifier), `gemini-embedding-001` |
+| Parsing | PyMuPDF, python-docx, BeautifulSoup, Pillow |
+| Chunking | LangChain recursive splitter with tiktoken |
+| Frontend | Next.js 16, React 19, Tailwind CSS 4 |
 
-## Requirements and configuration
+## Demo dataset
 
-- Python 3.10 or newer.
-- Node.js compatible with the locked Next.js 16 release.
-- MongoDB Atlas with Vector Search and Atlas Search enabled.
-- A Google Gemini API key with access to the configured generation and embedding
-  models.
+`backend/synthetic_data` holds a fictional payments incident, **INC-2026-1042**: 20 sources
+across documents, changelogs, metric graphs, transcripts and logs, plus 20 labelled evaluation
+questions. The four demo questions on the home screen each test something different:
 
-### Backend
+| Question | What it shows |
+| :--- | :--- |
+| Why did payments fail? | Timeline and cause across logs, notes and spec |
+| Is PAY-401 an auth error? | Exact error-code lookup |
+| Initial report vs evidence | Conflicting sources handled honestly |
+| Who approved the deploy? | Unanswerable: Concord.ai abstains |
 
-From the repository root in PowerShell:
+## Quick start
 
-```powershell
+**Needs:** Python 3.12, Node.js 20+, Docker, and a free [Gemini API key](https://aistudio.google.com/apikey).
+
+**1. Start a local Atlas** (Vector Search and Atlas Search included):
+
+```bash
+docker run -d --name concord-mongo -p 27017:27017 mongodb/mongodb-atlas-local:latest
+```
+
+**2. Backend:**
+
+```bash
 cd backend
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-Copy-Item .env.example .env
+.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+copy .env.example .env            # macOS/Linux: cp .env.example .env
 ```
 
-Edit `backend\.env` with real credentials. Keep `.env` private and untracked.
+In `backend/.env` set `MONGODB_URI=mongodb://localhost:27017/?directConnection=true` and your
+`GEMINI_API_KEY`. Then create both search indexes and start the API:
 
-| Variable | Purpose |
-|---|---|
-| `MONGODB_URI` | Atlas connection string |
-| `MONGODB_DATABASE` | Database name |
-| `MONGODB_SOURCE_COLLECTION` | Source metadata collection |
-| `MONGODB_CHUNK_COLLECTION` | Chunk and embedding collection |
-| `MONGODB_VECTOR_INDEX` | Atlas Vector Search index name |
-| `MONGODB_SEARCH_INDEX` | Atlas Search BM25 index name |
-| `GEMINI_API_KEY` | Gemini key for embeddings, answer generation, and citation verification |
-| `LLM_MODEL` | Gemini generation model; default `gemini-2.5-flash` |
-| `EMBEDDING_MODEL` | Gemini embedding model; default `gemini-embedding-001` |
-| `EMBEDDING_DIMENSIONS` | Gemini vector size and Atlas index dimension; default 768 |
-| `EMBEDDING_BATCH_SIZE` | Maximum texts per Gemini embedding request |
-| `DATASET_DIR` | Optional dataset root; defaults to `backend/synthetic_data` |
-| `CHUNK_SIZE`, `CHUNK_OVERLAP` | Token-based recursive chunking settings |
-| `RETRIEVAL_CANDIDATE_LIMIT`, `FINAL_EVIDENCE_LIMIT` | Candidate and final evidence limits |
-| `MAX_SOURCE_FILE_BYTES` | Maximum source file size accepted by ingestion |
-| `REQUEST_TIMEOUT_SECONDS` | Database/provider request timeout |
-| `SEARCH_INDEX_TIMEOUT_SECONDS` | How long to wait for Atlas search indexes to become queryable; default 90 (keep it under the UI's 120 s request timeout) |
-| `CORS_ORIGINS` | Comma-separated frontend origins |
-
-The vector dimensions are pinned with the embedding model. Changing model or
-dimensions requires recreating the Atlas vector index and re-embedding all chunks;
-vectors from different models or dimensions must not be mixed in the active index.
-
-### Atlas indexes
-
-Create both the Vector Search and BM25 Atlas Search indexes on the chunks collection:
-
-```powershell
-cd backend
-.\.venv\Scripts\Activate.ps1
+```bash
 python -m scripts.manage_vector_index --create
-```
-
-Run it as a module (`-m`) from `backend`, so Python can find the `app` package. It waits
-up to `SEARCH_INDEX_TIMEOUT_SECONDS` (default 90) for both indexes to become queryable;
-if it times out, run it again.
-
-The vector and Atlas Search definitions are documented in
-[`backend/scripts/vector_search_index.json`](backend/scripts/vector_search_index.json)
-and [`backend/scripts/atlas_search_index.json`](backend/scripts/atlas_search_index.json).
-Index creation is repeat-safe by configured index name. Check `/ready` or rerun the
-script without `--create` to inspect index readiness and vector dimensions.
-
-### Frontend
-
-```powershell
-cd frontend
-npm ci
-```
-
-Optional `frontend/.env.local`:
-
-```text
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-```
-
-## Run the application
-
-Start FastAPI in one terminal:
-
-```powershell
-cd backend
-.\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload --port 8000
 ```
 
-Start Next.js in another:
+**3. Load the demo incident:**
 
-```powershell
+```bash
+curl -X POST "http://localhost:8000/api/ingest/batch?incident_id=INC-2026-1042"
+```
+
+**4. Frontend:**
+
+```bash
 cd frontend
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`; API docs are at `http://localhost:8000/docs`.
-`GET /health` reports process liveness. `GET /ready` reports MongoDB, both Atlas
-indexes, Gemini configuration, and dataset readiness.
+Open http://localhost:3000. API docs live at http://localhost:8000/docs.
 
-Use **Import / refresh dataset** in the UI or call the APIs:
+> Using Atlas cloud instead? Put your `mongodb+srv://` URI in `.env`; the free tier allows the
+> three search indexes this project needs.
 
-```powershell
-Invoke-RestMethod -Method Post http://localhost:8000/api/ingest/batch
-Invoke-RestMethod -Method Post http://localhost:8000/api/investigate/ `
-  -ContentType 'application/json' `
-  -Body '{"query":"Why did some payments fail after the 2.4.0 deployment?","incident_id":"INC-2026-1042"}'
-Invoke-RestMethod 'http://localhost:8000/api/ingest/sources?incident_id=INC-2026-1042'
+## Configuration
+
+All settings live in `backend/.env` (see `backend/.env.example`).
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `MONGODB_URI` | | Atlas or Atlas Local connection string |
+| `MONGODB_DATABASE` | `traceiq_db` | Database name |
+| `MONGODB_SOURCE_COLLECTION` | `sources` | One document per source |
+| `MONGODB_CHUNK_COLLECTION` | `chunks` | Chunks with embeddings |
+| `MONGODB_VECTOR_INDEX` | `traceiq_vector_index` | Vector Search index name |
+| `MONGODB_SEARCH_INDEX` | `traceiq_search_index` | BM25 index name |
+| `GEMINI_API_KEY` | | Embeddings, answers and verification |
+| `LLM_MODEL` | `gemini-2.5-flash` | Answer and verifier model |
+| `EMBEDDING_MODEL` | `gemini-embedding-001` | Embedding model |
+| `EMBEDDING_DIMENSIONS` | `768` | Must match the vector index |
+| `CHUNK_SIZE` / `CHUNK_OVERLAP` | `500` / `60` | Tokens per chunk and overlap |
+| `RETRIEVAL_CANDIDATE_LIMIT` | `30` | Candidates per retriever |
+| `FINAL_EVIDENCE_LIMIT` | `10` | Chunks passed to the model |
+| `MAX_SOURCE_FILE_BYTES` | `26214400` | Upload size limit (25 MB) |
+| `SEARCH_INDEX_TIMEOUT_SECONDS` | `90` | Wait for indexes to become queryable |
+| `CORS_ORIGINS` | | Comma-separated frontend origins |
+
+Changing the embedding model or dimensions means recreating the vector index and re-embedding
+every chunk; vectors from different models must never share an index.
+
+## API
+
+| Method | Route | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/ingest/batch?incident_id=` | Import the demo dataset (repeat-safe) |
+| `POST` | `/api/ingest/upload` | Upload one file (`file`, `source_type`, `incident_id`, `owner`) |
+| `GET` | `/api/ingest/sources?incident_id=` | List a project's sources |
+| `GET` | `/api/ingest/runs/{run_id}` | One ingestion run's summary |
+| `POST` | `/api/investigate/` | Ask a question, with optional filters |
+| `GET` | `/api/eval/benchmark` | Run the benchmark |
+| `GET` | `/health`, `/ready` | Liveness; MongoDB, indexes, Gemini and dataset readiness |
+
+```bash
+curl -X POST http://localhost:8000/api/investigate/ \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Why did payments fail after the 2.4.0 deployment?", "incident_id": "INC-2026-1042"}'
 ```
 
 ## Evaluation
 
-The local labeled benchmark includes exact-identifier, semantic, multi-source,
-conflicting-source, and unanswerable questions. It reports Hit Rate@k, Recall@k,
-Precision@k, MRR, and nDCG@k for retrieval. Use:
-
-```powershell
-Invoke-RestMethod 'http://localhost:8000/api/eval/benchmark?top_k=10'
+```bash
+curl "http://localhost:8000/api/eval/benchmark?top_k=10"                        # retrieval only
+curl "http://localhost:8000/api/eval/benchmark?top_k=10&generate_answers=true"  # + answers
 ```
 
-To also call Gemini for generation, citation verification, and abstention checks:
+Retrieval returns `mean_recall_at_k`, `mean_reciprocal_rank`, `hit_rate`, `mean_precision_at_k`,
+`mean_ndcg_at_k` and `pass_rate`. With `generate_answers=true` it also checks citation validity,
+abstention and `mean_faithfulness`. The question set covers exact identifiers, semantic,
+multi-source, conflicting-source and unanswerable cases.
 
-```powershell
-Invoke-RestMethod 'http://localhost:8000/api/eval/benchmark?top_k=10&generate_answers=true'
-```
+## Tests
 
-Answer evaluation adds citation validity, abstention match, and verified-claim
-faithfulness. This is a project benchmark, not a substitute for comparing RAGAS,
-DeepEval, or production feedback/tracing tools on a larger human-labeled set.
-
-## Tests and dataset validation
-
-From the repository root:
-
-```powershell
+```bash
 cd backend
-.\.venv\Scripts\Activate.ps1
-python -m unittest discover -s tests -v
-python scripts\validate_synthetic_data.py synthetic_data
-```
+python -m pytest -q
+python scripts/validate_synthetic_data.py synthetic_data
 
-Frontend checks:
-
-```powershell
-cd frontend
+cd ../frontend
 npm run lint
 npm run build
 ```
 
-Backend tests and dataset validation use local deterministic fixtures and do not make
-live Gemini or MongoDB requests. The benchmark endpoint requires a populated Atlas
-database and configured Atlas indexes.
+Backend tests run offline on deterministic fixtures; they make no MongoDB or Gemini calls.
 
-## API
+## Project structure
 
-- `POST /api/ingest/batch`: idempotently import the built-in dataset; accepts an optional `incident_id`.
-- `POST /api/ingest/upload`: validate, parse, embed, and index one supported evidence file.
-- `GET /api/ingest/sources?incident_id=...`: list ingested sources.
-- `GET /api/ingest/runs/{run_id}`: fetch an ingestion summary.
-- `POST /api/investigate/`: investigate with optional incident, source-type, time,
-  version, and owner filters.
-- `GET /api/eval/benchmark`: run retrieval evaluation; optional
-  `generate_answers=true` adds Gemini-backed verification.
-- `GET /health`, `GET /ready`: liveness and dependency readiness.
+```text
+backend/
+  app/
+    api/            FastAPI routes: ingest, investigate, eval
+    core/           MongoDB connection and index readiness
+    ingestion/      parsers and chunking
+    retrieval/      vector search, hybrid search, RRF
+    reasoning/      query transform and investigator
+    services/       Gemini, embeddings, ingestion service
+  scripts/          search-index setup and dataset validator
+  synthetic_data/   demo incident INC-2026-1042
+  tests/            offline test suite
+frontend/
+  src/app/          Next.js pages
+  src/components/   chat, citations, upload drawer
+  src/lib/          shared types and demo questions
+docs/               product requirements (TraceIQ_PRD.pdf) and images
+learn_documents/    RAG primer and codebase tour
+```
 
-## Limitations and architectural choices
+## Roadmap
 
-- **Image understanding:** image bytes are validated and indexed by manifest
-  descriptions only; OCR/visual chart understanding is not enabled.
-- **Durable orchestration:** ingestion is repeat-safe and can be retried via its API.
-  Temporal is not introduced for this small, local evidence pack; add a durable
-  workflow engine if ingestion becomes long-running or event-driven.
-- **Reranking:** no cross-encoder or LLM reranker is enabled yet. Compare retrieval
-  metrics first and only add latency/cost if evaluation shows a measurable gain.
-- **Citation verification:** Gemini independently evaluates whether the cited text
-  entails each generated claim. This is a model-based verifier, not a formal proof or
-  a calibrated NLI classifier; measure false acceptance/rejection against human labels.
-- **Evaluation frameworks:** current metrics use the repository's fixed golden set.
-  Integrate RAGAS/DeepEval and production tracing/feedback after selecting a representative
-  human-annotated evaluation set.
-- **Live services:** Atlas/Gemini requests have not been exercised in this environment.
-  Configure credentials, create matching Atlas indexes, ingest the evidence pack, and
-  run the benchmark before relying on production behavior.
+Open work is tracked as GitHub issues in the
+[Hackathon submission](https://github.com/CodingTJ1507/RAG_Transfinitte/milestones) milestone:
+
+- **Ingestion quality**: HTML and TXT sections, PDF sections, owners, image understanding,
+  real dates, source authority (#14 to #19)
+- **Search insight**: explain plans and `numCandidates` tuning (#20), skip unchanged sources (#22)
+- **Reliability**: bounded Gemini retries, clear rate-limit messages, verifier fallback (#21)
+- **Storage and UI**: originals in GridFS (#23), file list (#24), incidents (#26),
+  benchmark page (#27)
+- **Release**: final evaluation, deployment and demo (#28 to #31)
+
+## Contributing
+
+1. Pick an issue assigned to you and branch from fresh `main` (one branch per issue).
+2. Follow [`AGENTS.md`](AGENTS.md) and the product plan in [`docs/TraceIQ_PRD.pdf`](docs/TraceIQ_PRD.pdf).
+3. Add tests in your own test file and show them failing before your change.
+4. Open a PR using the template, with `Closes #N` or `Part of #N` and real test output.
+5. Never commit `.env`, keys or `backend/uploads/`.
+
+## Limitations
+
+- Images are indexed by their manifest description until image understanding lands (#17).
+- No authentication yet; run it locally or behind your own gateway.
+- Rank fusion runs in Python, so it works on any Atlas tier without `$rankFusion`.
+- The verifier is a model, not a proof; measure it against human labels before trusting it fully.
