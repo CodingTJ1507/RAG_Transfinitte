@@ -1,0 +1,815 @@
+{
+  "incident_id": "INC-2026-1042",
+  "expected_sources": [
+    {
+      "question_id": "Q01",
+      "required_source_ids": [
+        "IMG-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "IMG-002",
+          "locator": {
+            "visible_text": "HTTP/1.1 422 Unprocessable Entity"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q02",
+      "required_source_ids": [
+        "DOC-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-001",
+          "locator": {
+            "page": 1,
+            "section": "4. Retry Behaviour Between Services"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q03",
+      "required_source_ids": [
+        "DOC-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q04",
+      "required_source_ids": [
+        "DOC-004"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Dependency updates"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q05",
+      "required_source_ids": [
+        "REC-003",
+        "REC-001",
+        "REC-004",
+        "DOC-004",
+        "WEB-001",
+        "DOC-002",
+        "TRN-003"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-001",
+              "EVT-002"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-002"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-007",
+              "PR-008",
+              "PR-009",
+              "PR-010",
+              "PR-011",
+              "PR-012",
+              "PR-013",
+              "PR-014",
+              "PR-015",
+              "PR-016"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009",
+              "LOG-0015"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "VERIFIED"
+          }
+        },
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Dependency updates"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0007",
+              "LOG-0026"
+            ]
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-011"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        },
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Dependency updates"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0002",
+              "LOG-0007",
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-006",
+              "EVT-007"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-017"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "migration",
+            "heading": "Migrating from 2.x"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q06",
+      "required_source_ids": [
+        "DOC-002",
+        "REC-001",
+        "IMG-002",
+        "WEB-003"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "5. Error Codes"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "IMG-002",
+          "locator": {
+            "visible_text": "HTTP/1.1 422 Unprocessable Entity"
+          }
+        },
+        {
+          "source_id": "WEB-003",
+          "locator": {
+            "html_id": "app-codes",
+            "heading": "Application error codes are not HTTP statuses"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "5. Error Codes"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q07",
+      "required_source_ids": [
+        "REC-004",
+        "DOC-001",
+        "TRN-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-007",
+              "PR-008",
+              "PR-009",
+              "PR-010",
+              "PR-011",
+              "PR-012",
+              "PR-013",
+              "PR-014",
+              "PR-015",
+              "PR-016"
+            ]
+          }
+        },
+        {
+          "source_id": "DOC-001",
+          "locator": {
+            "page": 1,
+            "section": "3. Checkout Payment Flow"
+          }
+        },
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-005",
+            "start": "00:01:20.000",
+            "speaker": "Lena Fischer"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q08",
+      "required_source_ids": [
+        "REC-002",
+        "DOC-001",
+        "REC-001",
+        "TRN-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-001",
+          "locator": {
+            "page": 1,
+            "section": "4. Retry Behaviour Between Services"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009",
+              "LOG-0010",
+              "LOG-0011",
+              "LOG-0012",
+              "LOG-0013",
+              "LOG-0014"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-014",
+              "M-016"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-008",
+            "start": "00:02:05.000",
+            "speaker": "Lena Fischer"
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-013",
+              "M-015"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q09",
+      "required_source_ids": [
+        "TRN-002",
+        "REC-001",
+        "REC-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-007",
+            "start": "00:01:45.000",
+            "speaker": "Tom Okafor"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0021"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-015"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q10",
+      "required_source_ids": [
+        "DOC-003",
+        "DOC-004",
+        "REC-003",
+        "REC-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-006",
+              "EVT-007"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-043",
+              "M-044"
+            ]
+          }
+        },
+        {
+          "source_id": "DOC-003",
+          "locator": {
+            "page": 1,
+            "section": "5. Rollback Considerations"
+          }
+        },
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Compatibility"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q11",
+      "required_source_ids": [
+        "REC-003",
+        "REC-001",
+        "REC-002",
+        "IMG-004"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-001",
+              "EVT-002"
+            ]
+          }
+        },
+        {
+          "source_id": "IMG-004",
+          "locator": {
+            "visible_text": "10:02:00 Deploy started 2.3.1 -> 2.4.0"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-002"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-006",
+              "EVT-007"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-043",
+              "M-044"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q12",
+      "required_source_ids": [
+        "REC-003",
+        "REC-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-002"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q13",
+      "required_source_ids": [
+        "REC-001",
+        "REC-003",
+        "REC-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-002"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-006",
+              "EVT-007"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-043",
+              "M-044"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q14",
+      "required_source_ids": [
+        "DOC-002",
+        "WEB-001",
+        "DOC-004",
+        "REC-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        },
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Dependency updates"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0002",
+              "LOG-0007",
+              "LOG-0009"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q15",
+      "required_source_ids": [
+        "DOC-005",
+        "TRN-002",
+        "DOC-002"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-005",
+          "locator": {
+            "heading": "3. Suspected Cause"
+          }
+        },
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-003",
+            "start": "00:00:35.000",
+            "speaker": "Priya Nair"
+          }
+        },
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-004",
+            "start": "00:00:52.000",
+            "speaker": "Arjun Rao"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "5. Error Codes"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q16",
+      "required_source_ids": [
+        "DOC-004",
+        "REC-004",
+        "WEB-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Compatibility"
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-011",
+              "PR-012"
+            ]
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q17",
+      "required_source_ids": [
+        "TRN-003",
+        "TRN-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        },
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-011",
+            "start": "00:02:58.000",
+            "speaker": "Maya Chen"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q18",
+      "required_source_ids": [
+        "TRN-003"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q19",
+      "required_source_ids": [
+        "TRN-003",
+        "WEB-001"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "migration",
+            "heading": "Migrating from 2.x"
+          }
+        }
+      ]
+    },
+    {
+      "question_id": "Q20",
+      "required_source_ids": [
+        "TRN-001",
+        "TRN-003"
+      ],
+      "supporting_locations": [
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-008",
+            "start": "00:02:15.000",
+            "speaker": "Arjun Rao"
+          }
+        },
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        }
+      ]
+    }
+  ]
+}

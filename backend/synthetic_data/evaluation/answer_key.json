@@ -1,0 +1,455 @@
+{
+  "incident_id": "INC-2026-1042",
+  "warning": "Answer key. Never ingest into the knowledge base.",
+  "answers": [
+    {
+      "question_id": "Q01",
+      "expected_answer": "HTTP 422 Unprocessable Entity with error_code PAY-401 and message \"Request validation failed\". Trace ID trc-5a10c4.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-03",
+          "status": "confirmed",
+          "source_ids": [
+            "DOC-002",
+            "IMG-002",
+            "REC-001",
+            "WEB-003"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q02",
+      "expected_answer": "Up to 3 retries, with backoff of 200 ms, 400 ms and 800 ms, on any non-2xx response (DOC-001 page 1, section 4).",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-10",
+          "status": "confirmed",
+          "source_ids": [
+            "DOC-001",
+            "REC-001",
+            "REC-002",
+            "REC-005",
+            "TRN-002"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q03",
+      "expected_answer": "Until 2027-03-31, as a deprecated alias of payment_method_token (DOC-002 page 2, section 4).",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-07",
+          "status": "contradicted",
+          "source_ids": [
+            "DOC-002",
+            "REC-001",
+            "REC-004"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q04",
+      "expected_answer": "schemaguard upgraded from 2.8.4 to 3.0.1 (release notes, Dependency updates).",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-05",
+          "status": "confirmed",
+          "source_ids": [
+            "DOC-004",
+            "REC-001",
+            "TRN-001"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q05",
+      "expected_answer": "2.4.0 deployed 10:02-10:04:30; first PAY-401 at 10:05:12. Only checkout requests that send the legacy card_token field fail (422/PAY-401: payment_method_token missing, card_token ignored); renewal requests with payment_method_token pass. 2.4.0 upgraded schemaguard to 3.0.1, and schemaguard 3.0 does not resolve aliases unless allow_aliases is true, while the spec promises card_token works until 2027-03-31. Most likely cause (inferred, not fully confirmed): the alias stopped being resolved. Rollback at 11:10-11:13:40 restored service. Next step: in staging, test 2.4.0 with allow_aliases: true using a card_token checkout body, and read the 2.4.0 config with the read-only config endpoint.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-01",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-004",
+            "REC-003"
+          ]
+        },
+        {
+          "claim_id": "C-02",
+          "status": "confirmed",
+          "source_ids": [
+            "REC-001",
+            "REC-003"
+          ]
+        },
+        {
+          "claim_id": "C-04",
+          "status": "confirmed",
+          "source_ids": [
+            "REC-001",
+            "REC-004",
+            "TRN-003"
+          ]
+        },
+        {
+          "claim_id": "C-05",
+          "status": "confirmed",
+          "source_ids": [
+            "DOC-004",
+            "REC-001",
+            "TRN-001"
+          ]
+        },
+        {
+          "claim_id": "C-06",
+          "status": "confirmed",
+          "source_ids": [
+            "WEB-001"
+          ]
+        },
+        {
+          "claim_id": "C-07",
+          "status": "contradicted",
+          "source_ids": [
+            "DOC-002",
+            "REC-001",
+            "REC-004"
+          ]
+        },
+        {
+          "claim_id": "C-08",
+          "status": "inferred",
+          "source_ids": [
+            "DOC-002",
+            "DOC-004",
+            "REC-001",
+            "TRN-003",
+            "WEB-001"
+          ]
+        },
+        {
+          "claim_id": "C-13",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-001",
+            "REC-002",
+            "REC-003",
+            "REC-004"
+          ]
+        },
+        {
+          "claim_id": "C-20",
+          "status": "unknown",
+          "source_ids": [
+            "TRN-003",
+            "WEB-001"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q06",
+      "expected_answer": "No. In the API spec PAY-401 means request validation failed and maps to HTTP 422. Logs and the screenshot show 422 responses. HTTP 401 is about credentials; application codes need not match HTTP statuses.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-03",
+          "status": "confirmed",
+          "source_ids": [
+            "DOC-002",
+            "IMG-002",
+            "REC-001",
+            "WEB-003"
+          ]
+        },
+        {
+          "claim_id": "C-09",
+          "status": "contradicted",
+          "source_ids": [
+            "DOC-002",
+            "DOC-005",
+            "TRN-002"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q07",
+      "expected_answer": "Subscription-renewal payments already send payment_method_token (schema v2), so they passed validation. Only the checkout flow still sent the legacy card_token field.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-04",
+          "status": "confirmed",
+          "source_ids": [
+            "REC-001",
+            "REC-004",
+            "TRN-003"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q08",
+      "expected_answer": "payment-service rejected bad requests quickly (p95 ~180 ms down to ~140 ms). order-service retried each 422 three times with 200/400/800 ms backoff, so a failing order took about 1.4-1.5 s (trace trc-5a0e11: 10:05:12.331 to 10:05:13.781).",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-10",
+          "status": "confirmed",
+          "source_ids": [
+            "DOC-001",
+            "REC-001",
+            "REC-002",
+            "REC-005",
+            "TRN-002"
+          ]
+        },
+        {
+          "claim_id": "C-11",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-001",
+            "REC-002"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q09",
+      "expected_answer": "Not supported. Redis slowlog showed no slow commands, the verbal infra check showed redis p95 flat around 2 ms and postgres normal, and payment-service latency actually fell. Note the infra dashboard itself is not in the dataset.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-12",
+          "status": "inferred",
+          "source_ids": [
+            "REC-001",
+            "REC-002",
+            "TRN-002"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q10",
+      "expected_answer": "The runbook needs incident commander approval and a check for database migrations; the release notes say 2.4.0 has none. Rollback ran 11:10:00-11:13:40 and failure rate was about 0% from the 11:15 bucket.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-13",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-001",
+            "REC-002",
+            "REC-003",
+            "REC-004"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q11",
+      "expected_answer": "10:02:00 deploy start; 10:04:30 deploy complete; 10:05:00 health check passed; 10:05:12 first PAY-401; 10:09 alert; 10:15 incident opened; 10:20 incident call; 11:10:00 rollback start; 11:13:40 rollback complete; ~0% failures from 11:15; 11:30 alert resolved.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-01",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-004",
+            "REC-003"
+          ]
+        },
+        {
+          "claim_id": "C-02",
+          "status": "confirmed",
+          "source_ids": [
+            "REC-001",
+            "REC-003"
+          ]
+        },
+        {
+          "claim_id": "C-13",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-001",
+            "REC-002",
+            "REC-003",
+            "REC-004"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q12",
+      "expected_answer": "42 seconds (10:04:30 to 10:05:12). Then 3 minutes 48 seconds to the alert at 10:09:00.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-02",
+          "status": "confirmed",
+          "source_ids": [
+            "REC-001",
+            "REC-003"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q13",
+      "expected_answer": "From the first PAY-401 at 10:05:12 to rollback completion at 11:13:40, about 1 hour 8 minutes. Metrics are back to ~0% from the 11:15 bucket.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-02",
+          "status": "confirmed",
+          "source_ids": [
+            "REC-001",
+            "REC-003"
+          ]
+        },
+        {
+          "claim_id": "C-13",
+          "status": "confirmed",
+          "source_ids": [
+            "IMG-001",
+            "REC-002",
+            "REC-003",
+            "REC-004"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q14",
+      "expected_answer": "2.3.1 (schemaguard 2.8.4) applied the alias (log LOG-0002). 2.4.0 uses schemaguard 3.0.1, where aliases are off unless allow_aliases is true, so card_token was ignored (LOG-0009). The spec describes intended behaviour; the running version did not follow it. This mechanism is inferred, not tested.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-06",
+          "status": "confirmed",
+          "source_ids": [
+            "WEB-001"
+          ]
+        },
+        {
+          "claim_id": "C-07",
+          "status": "contradicted",
+          "source_ids": [
+            "DOC-002",
+            "REC-001",
+            "REC-004"
+          ]
+        },
+        {
+          "claim_id": "C-08",
+          "status": "inferred",
+          "source_ids": [
+            "DOC-002",
+            "DOC-004",
+            "REC-001",
+            "TRN-003",
+            "WEB-001"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q15",
+      "expected_answer": "No. The report was written at 10:18 before checks. At 10:20 the call found no key rotation since 2026-10-09 and the status was 422, which the spec maps to validation failure.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-09",
+          "status": "contradicted",
+          "source_ids": [
+            "DOC-002",
+            "DOC-005",
+            "TRN-002"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q16",
+      "expected_answer": "No, not for legacy clients. Checkout requests that sent card_token failed on 2.4.0. schemaguard 3.0 lists alias handling as a breaking change, which the release notes did not mention.",
+      "abstention_required": false,
+      "claim_support": [
+        {
+          "claim_id": "C-14",
+          "status": "contradicted",
+          "source_ids": [
+            "DOC-004",
+            "REC-004"
+          ]
+        },
+        {
+          "claim_id": "C-06",
+          "status": "confirmed",
+          "source_ids": [
+            "WEB-001"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q17",
+      "expected_answer": "Cannot be answered. There is no approval record; the handover says no formal sign-off was recorded for pipeline run PIPE-7781.",
+      "abstention_required": true,
+      "claim_support": [
+        {
+          "claim_id": "C-18",
+          "status": "unknown",
+          "source_ids": [
+            "TRN-001",
+            "TRN-003"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q18",
+      "expected_answer": "Cannot be answered. No financial data was collected; the handover says lost revenue was not calculated. Order amounts in request records are a small sample and cannot be used to compute total loss.",
+      "abstention_required": true,
+      "claim_support": [
+        {
+          "claim_id": "C-19",
+          "status": "unknown",
+          "source_ids": [
+            "TRN-003"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q19",
+      "expected_answer": "Not known from the evidence. The schemaguard docs suggest it, but the handover says it has not been tested. Recommend testing it in staging.",
+      "abstention_required": true,
+      "claim_support": [
+        {
+          "claim_id": "C-20",
+          "status": "unknown",
+          "source_ids": [
+            "TRN-003",
+            "WEB-001"
+          ]
+        }
+      ]
+    },
+    {
+      "question_id": "Q20",
+      "expected_answer": "Not known. Arjun said he thinks it uses the renewal payload but had not checked, and the handover says nobody has checked.",
+      "abstention_required": true,
+      "claim_support": []
+    }
+  ]
+}

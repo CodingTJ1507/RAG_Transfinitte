@@ -1,0 +1,354 @@
+{
+  "incident_id": "INC-2026-1042",
+  "questions": [
+    {
+      "question_id": "Q01",
+      "question": "What error code and HTTP status were returned for request req-1107, and what was its trace ID?",
+      "category": "single_source",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "IMG-002"
+      ],
+      "expected_claim_ids": [
+        "C-03"
+      ],
+      "expected_answer": "HTTP 422 Unprocessable Entity with error_code PAY-401 and message \"Request validation failed\". Trace ID trc-5a10c4.",
+      "abstention_required": false,
+      "evaluation_notes": "Answerable from the screenshot alone. The screenshot does not show which field was missing."
+    },
+    {
+      "question_id": "Q02",
+      "question": "How many times does order-service retry a failed payment call, and what backoff does it use?",
+      "category": "single_source",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "DOC-001"
+      ],
+      "expected_claim_ids": [
+        "C-10"
+      ],
+      "expected_answer": "Up to 3 retries, with backoff of 200 ms, 400 ms and 800 ms, on any non-2xx response (DOC-001 page 1, section 4).",
+      "abstention_required": false,
+      "evaluation_notes": "REC-005 DEP-03 also has it but is not required."
+    },
+    {
+      "question_id": "Q03",
+      "question": "According to the Payment API Specification, until when is the card_token field accepted?",
+      "category": "single_source",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "DOC-002"
+      ],
+      "expected_claim_ids": [
+        "C-07"
+      ],
+      "expected_answer": "Until 2027-03-31, as a deprecated alias of payment_method_token (DOC-002 page 2, section 4).",
+      "abstention_required": false,
+      "evaluation_notes": "Answer must not claim it worked in 2.4.0."
+    },
+    {
+      "question_id": "Q04",
+      "question": "Which validation library version change is included in payment-service 2.4.0?",
+      "category": "single_source",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "DOC-004"
+      ],
+      "expected_claim_ids": [
+        "C-05"
+      ],
+      "expected_answer": "schemaguard upgraded from 2.8.4 to 3.0.1 (release notes, Dependency updates).",
+      "abstention_required": false,
+      "evaluation_notes": ""
+    },
+    {
+      "question_id": "Q05",
+      "question": "Why did payment requests start failing after the latest deployment? Reconstruct the timeline, identify the most likely cause, explain the evidence, and recommend the next diagnostic step.",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "expected_source_ids": [
+        "REC-003",
+        "REC-001",
+        "REC-004",
+        "DOC-004",
+        "WEB-001",
+        "DOC-002",
+        "TRN-003"
+      ],
+      "expected_claim_ids": [
+        "C-01",
+        "C-02",
+        "C-04",
+        "C-05",
+        "C-06",
+        "C-07",
+        "C-08",
+        "C-13",
+        "C-20"
+      ],
+      "expected_answer": "2.4.0 deployed 10:02-10:04:30; first PAY-401 at 10:05:12. Only checkout requests that send the legacy card_token field fail (422/PAY-401: payment_method_token missing, card_token ignored); renewal requests with payment_method_token pass. 2.4.0 upgraded schemaguard to 3.0.1, and schemaguard 3.0 does not resolve aliases unless allow_aliases is true, while the spec promises card_token works until 2027-03-31. Most likely cause (inferred, not fully confirmed): the alias stopped being resolved. Rollback at 11:10-11:13:40 restored service. Next step: in staging, test 2.4.0 with allow_aliases: true using a card_token checkout body, and read the 2.4.0 config with the read-only config endpoint.",
+      "abstention_required": false,
+      "evaluation_notes": "Uses 4 source types (structured, document, webpage, transcript). Must label the mechanism as inferred and must not take production actions."
+    },
+    {
+      "question_id": "Q06",
+      "question": "Is PAY-401 an authentication error?",
+      "category": "cross_source",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "DOC-002",
+        "REC-001",
+        "IMG-002",
+        "WEB-003"
+      ],
+      "expected_claim_ids": [
+        "C-03",
+        "C-09"
+      ],
+      "expected_answer": "No. In the API spec PAY-401 means request validation failed and maps to HTTP 422. Logs and the screenshot show 422 responses. HTTP 401 is about credentials; application codes need not match HTTP statuses.",
+      "abstention_required": false,
+      "evaluation_notes": "Should mention the initial report's wrong reading if it uses DOC-005."
+    },
+    {
+      "question_id": "Q07",
+      "question": "Why did some payments still succeed while payment-service 2.4.0 was running?",
+      "category": "cross_source",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "REC-004",
+        "DOC-001",
+        "TRN-001"
+      ],
+      "expected_claim_ids": [
+        "C-04"
+      ],
+      "expected_answer": "Subscription-renewal payments already send payment_method_token (schema v2), so they passed validation. Only the checkout flow still sent the legacy card_token field.",
+      "abstention_required": false,
+      "evaluation_notes": "Requires request records plus flow description."
+    },
+    {
+      "question_id": "Q08",
+      "question": "Why did order-service payment latency rise to about 1.5 seconds while payment-service latency went down?",
+      "category": "cross_source",
+      "difficulty": "hard",
+      "expected_source_ids": [
+        "REC-002",
+        "DOC-001",
+        "REC-001",
+        "TRN-002"
+      ],
+      "expected_claim_ids": [
+        "C-10",
+        "C-11"
+      ],
+      "expected_answer": "payment-service rejected bad requests quickly (p95 ~180 ms down to ~140 ms). order-service retried each 422 three times with 200/400/800 ms backoff, so a failing order took about 1.4-1.5 s (trace trc-5a0e11: 10:05:12.331 to 10:05:13.781).",
+      "abstention_required": false,
+      "evaluation_notes": "Uses structured, document and transcript sources (3 types)."
+    },
+    {
+      "question_id": "Q09",
+      "question": "Did Redis or database slowness cause the payment failures?",
+      "category": "cross_source",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "TRN-002",
+        "REC-001",
+        "REC-002"
+      ],
+      "expected_claim_ids": [
+        "C-12"
+      ],
+      "expected_answer": "Not supported. Redis slowlog showed no slow commands, the verbal infra check showed redis p95 flat around 2 ms and postgres normal, and payment-service latency actually fell. Note the infra dashboard itself is not in the dataset.",
+      "abstention_required": false,
+      "evaluation_notes": "Should flag the verbal-only part."
+    },
+    {
+      "question_id": "Q10",
+      "question": "Was rolling back to 2.3.1 safe according to the runbook, and did it work?",
+      "category": "cross_source",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "DOC-003",
+        "DOC-004",
+        "REC-003",
+        "REC-002"
+      ],
+      "expected_claim_ids": [
+        "C-13"
+      ],
+      "expected_answer": "The runbook needs incident commander approval and a check for database migrations; the release notes say 2.4.0 has none. Rollback ran 11:10:00-11:13:40 and failure rate was about 0% from the 11:15 bucket.",
+      "abstention_required": false,
+      "evaluation_notes": ""
+    },
+    {
+      "question_id": "Q11",
+      "question": "Reconstruct the incident timeline from deploy start to recovery.",
+      "category": "timeline",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "REC-003",
+        "REC-001",
+        "REC-002",
+        "IMG-004"
+      ],
+      "expected_claim_ids": [
+        "C-01",
+        "C-02",
+        "C-13"
+      ],
+      "expected_answer": "10:02:00 deploy start; 10:04:30 deploy complete; 10:05:00 health check passed; 10:05:12 first PAY-401; 10:09 alert; 10:15 incident opened; 10:20 incident call; 11:10:00 rollback start; 11:13:40 rollback complete; ~0% failures from 11:15; 11:30 alert resolved.",
+      "abstention_required": false,
+      "evaluation_notes": "Times in UTC."
+    },
+    {
+      "question_id": "Q12",
+      "question": "How long after the deploy completed did the first PAY-401 appear, and how long after that did the alert fire?",
+      "category": "timeline",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "REC-003",
+        "REC-001"
+      ],
+      "expected_claim_ids": [
+        "C-02"
+      ],
+      "expected_answer": "42 seconds (10:04:30 to 10:05:12). Then 3 minutes 48 seconds to the alert at 10:09:00.",
+      "abstention_required": false,
+      "evaluation_notes": ""
+    },
+    {
+      "question_id": "Q13",
+      "question": "For how long were checkout payments failing?",
+      "category": "timeline",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "REC-001",
+        "REC-003",
+        "REC-002"
+      ],
+      "expected_claim_ids": [
+        "C-02",
+        "C-13"
+      ],
+      "expected_answer": "From the first PAY-401 at 10:05:12 to rollback completion at 11:13:40, about 1 hour 8 minutes. Metrics are back to ~0% from the 11:15 bucket.",
+      "abstention_required": false,
+      "evaluation_notes": "Accept about 68-70 minutes."
+    },
+    {
+      "question_id": "Q14",
+      "question": "The API spec says card_token is still accepted. Why did 2.4.0 reject it when 2.3.1 accepted it?",
+      "category": "conflicting_evidence",
+      "difficulty": "hard",
+      "expected_source_ids": [
+        "DOC-002",
+        "WEB-001",
+        "DOC-004",
+        "REC-001"
+      ],
+      "expected_claim_ids": [
+        "C-06",
+        "C-07",
+        "C-08"
+      ],
+      "expected_answer": "2.3.1 (schemaguard 2.8.4) applied the alias (log LOG-0002). 2.4.0 uses schemaguard 3.0.1, where aliases are off unless allow_aliases is true, so card_token was ignored (LOG-0009). The spec describes intended behaviour; the running version did not follow it. This mechanism is inferred, not tested.",
+      "abstention_required": false,
+      "evaluation_notes": "Version-sensitive: must compare 2.3.1 vs 2.4.0."
+    },
+    {
+      "question_id": "Q15",
+      "question": "The initial report blames a credential problem. Is that still the best explanation?",
+      "category": "conflicting_evidence",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "DOC-005",
+        "TRN-002",
+        "DOC-002"
+      ],
+      "expected_claim_ids": [
+        "C-09"
+      ],
+      "expected_answer": "No. The report was written at 10:18 before checks. At 10:20 the call found no key rotation since 2026-10-09 and the status was 422, which the spec maps to validation failure.",
+      "abstention_required": false,
+      "evaluation_notes": "Must recognise DOC-005 as early and superseded."
+    },
+    {
+      "question_id": "Q16",
+      "question": "The 2.4.0 release notes say there are no breaking changes. Is that correct?",
+      "category": "conflicting_evidence",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "DOC-004",
+        "REC-004",
+        "WEB-001"
+      ],
+      "expected_claim_ids": [
+        "C-14",
+        "C-06"
+      ],
+      "expected_answer": "No, not for legacy clients. Checkout requests that sent card_token failed on 2.4.0. schemaguard 3.0 lists alias handling as a breaking change, which the release notes did not mention.",
+      "abstention_required": false,
+      "evaluation_notes": ""
+    },
+    {
+      "question_id": "Q17",
+      "question": "Which person approved the payment-service 2.4.0 production deploy?",
+      "category": "unanswerable",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "TRN-003",
+        "TRN-001"
+      ],
+      "expected_claim_ids": [
+        "C-18"
+      ],
+      "expected_answer": "Cannot be answered. There is no approval record; the handover says no formal sign-off was recorded for pipeline run PIPE-7781.",
+      "abstention_required": true,
+      "evaluation_notes": "Must not name Maya Chen or anyone else as approver."
+    },
+    {
+      "question_id": "Q18",
+      "question": "How much revenue did ShopSphere lose during the incident?",
+      "category": "unanswerable",
+      "difficulty": "easy",
+      "expected_source_ids": [
+        "TRN-003"
+      ],
+      "expected_claim_ids": [
+        "C-19"
+      ],
+      "expected_answer": "Cannot be answered. No financial data was collected; the handover says lost revenue was not calculated. Order amounts in request records are a small sample and cannot be used to compute total loss.",
+      "abstention_required": true,
+      "evaluation_notes": "Must not multiply sample amounts into a total."
+    },
+    {
+      "question_id": "Q19",
+      "question": "Will setting allow_aliases: true in payment-service 2.4.0 fix the failures?",
+      "category": "unanswerable",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "TRN-003",
+        "WEB-001"
+      ],
+      "expected_claim_ids": [
+        "C-20"
+      ],
+      "expected_answer": "Not known from the evidence. The schemaguard docs suggest it, but the handover says it has not been tested. Recommend testing it in staging.",
+      "abstention_required": true,
+      "evaluation_notes": "Reasonable engineering question; answer must not claim it works."
+    },
+    {
+      "question_id": "Q20",
+      "question": "What request payload does the staging smoke test suite send?",
+      "category": "unanswerable",
+      "difficulty": "medium",
+      "expected_source_ids": [
+        "TRN-001",
+        "TRN-003"
+      ],
+      "expected_claim_ids": [],
+      "expected_answer": "Not known. Arjun said he thinks it uses the renewal payload but had not checked, and the handover says nobody has checked.",
+      "abstention_required": true,
+      "evaluation_notes": "Reasonable question; answer must treat Arjun's statement as a guess."
+    }
+  ]
+}

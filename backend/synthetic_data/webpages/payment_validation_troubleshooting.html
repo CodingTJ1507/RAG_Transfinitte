@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Troubleshooting Payment Request Validation Errors</title>
+<meta name="description" content="Fictional page for a synthetic training dataset."></head>
+<body>
+<header><p>devnotes.example &mdash; fictional site for training data</p></header>
+<main>
+<h1>Troubleshooting Payment Request Validation Errors</h1>
+
+<p>Published 2026-05-03. General guide. Not about any specific company.</p>
+<h2 id="what-it-means">What a validation error means</h2>
+<p>A validation error means the server read your request but the body did not match the schema it expects. The server never tried to charge the payment. Retrying the same body will fail the same way.</p>
+<h2 id="common-causes">Common causes</h2>
+<p>The most common causes are: a renamed field that one client still sends with the old name, a missing required field, a wrong type (for example the amount sent as a string), and a library upgrade on the server that changed how the schema is applied.</p>
+<h2 id="how-to-check">How to check</h2>
+<p>Put one failing request next to one working request and compare the field names. If only one client or one code path fails, the problem is usually that client's request shape, not the network or the database. Check the server's dependency changelog when errors begin right after a deploy.</p>
+<h2 id="retries">A note on retries</h2>
+<p>Validation errors are not temporary. Clients that retry them only add load and delay. Many teams retry only on 5xx responses and timeouts.</p>
+
+</main>
+<footer><p>This page is fictional and is not official documentation for any real product.</p></footer>
+</body>
+</html>

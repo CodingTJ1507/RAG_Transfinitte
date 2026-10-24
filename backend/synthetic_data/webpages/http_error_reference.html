@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>HTTP Status Codes: 4xx Reference</title>
+<meta name="description" content="Fictional page for a synthetic training dataset."></head>
+<body>
+<header><p>httpref.example &mdash; fictional site for training data</p></header>
+<main>
+<h1>HTTP Status Codes: 4xx Reference</h1>
+
+<p>Published 2025-11-20. General reference.</p>
+<h2 id="400">400 Bad Request</h2>
+<p>The server could not parse the request, for example invalid JSON.</p>
+<h2 id="401">401 Unauthorized</h2>
+<p>The request has no valid credentials. The client should send or refresh its credentials. This status is about authentication, not about the request body.</p>
+<h2 id="403">403 Forbidden</h2>
+<p>The client is known but is not allowed to do this action.</p>
+<h2 id="409">409 Conflict</h2>
+<p>The request conflicts with the current state, for example a reused idempotency key with a different body.</p>
+<h2 id="422">422 Unprocessable Content</h2>
+<p>The body was parsed but failed validation, for example a required field is missing. Older documents call this status &quot;Unprocessable Entity&quot;.</p>
+<h2 id="app-codes">Application error codes are not HTTP statuses</h2>
+<p>Many APIs return their own codes such as &quot;ABC-401&quot;. The number inside such a code is chosen by the API owner and does not have to match an HTTP status. Always check the HTTP status line and the API&#39;s own error table.</p>
+
+</main>
+<footer><p>This page is fictional and is not official documentation for any real product.</p></footer>
+</body>
+</html>

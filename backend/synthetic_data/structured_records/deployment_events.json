@@ -1,0 +1,105 @@
+{
+  "incident_id": "INC-2026-1042",
+  "events": [
+    {
+      "event_id": "EVT-001",
+      "timestamp": "2026-10-23T10:02:00Z",
+      "event_type": "deploy_started",
+      "service": "payment-service",
+      "old_version": "2.3.1",
+      "new_version": "2.4.0",
+      "environment": "production",
+      "status": "in_progress",
+      "incident_id": null,
+      "note": "Rolling deploy of 4 instances started by deploy pipeline run PIPE-7781.",
+      "pipeline_run": "PIPE-7781"
+    },
+    {
+      "event_id": "EVT-002",
+      "timestamp": "2026-10-23T10:04:30Z",
+      "event_type": "deploy_completed",
+      "service": "payment-service",
+      "old_version": "2.3.1",
+      "new_version": "2.4.0",
+      "environment": "production",
+      "status": "succeeded",
+      "incident_id": null,
+      "note": "All 4 instances running 2.4.0.",
+      "pipeline_run": "PIPE-7781"
+    },
+    {
+      "event_id": "EVT-003",
+      "timestamp": "2026-10-23T10:05:00Z",
+      "event_type": "health_check",
+      "service": "payment-service",
+      "old_version": "2.4.0",
+      "new_version": "2.4.0",
+      "environment": "production",
+      "status": "passed",
+      "incident_id": null,
+      "note": "GET /healthz returned 200 on 4/4 instances. Health check does not send payment requests."
+    },
+    {
+      "event_id": "EVT-004",
+      "timestamp": "2026-10-23T10:09:00Z",
+      "event_type": "alert_triggered",
+      "service": "payment-service",
+      "old_version": "2.4.0",
+      "new_version": "2.4.0",
+      "environment": "production",
+      "status": "firing",
+      "incident_id": null,
+      "note": "PaymentFailureRateHigh: failure rate above 5% for 5 minutes."
+    },
+    {
+      "event_id": "EVT-005",
+      "timestamp": "2026-10-23T10:15:00Z",
+      "event_type": "incident_opened",
+      "service": "payment-service",
+      "old_version": "2.4.0",
+      "new_version": "2.4.0",
+      "environment": "production",
+      "status": "open",
+      "incident_id": "INC-2026-1042",
+      "note": "Incident opened for elevated payment failures."
+    },
+    {
+      "event_id": "EVT-006",
+      "timestamp": "2026-10-23T11:10:00Z",
+      "event_type": "rollback_started",
+      "service": "payment-service",
+      "old_version": "2.4.0",
+      "new_version": "2.3.1",
+      "environment": "production",
+      "status": "in_progress",
+      "incident_id": "INC-2026-1042",
+      "note": "Rollback to previous version started by deploy pipeline run PIPE-7790.",
+      "pipeline_run": "PIPE-7790"
+    },
+    {
+      "event_id": "EVT-007",
+      "timestamp": "2026-10-23T11:13:40Z",
+      "event_type": "rollback_completed",
+      "service": "payment-service",
+      "old_version": "2.4.0",
+      "new_version": "2.3.1",
+      "environment": "production",
+      "status": "succeeded",
+      "incident_id": "INC-2026-1042",
+      "note": "All 4 instances running 2.3.1.",
+      "pipeline_run": "PIPE-7790"
+    },
+    {
+      "event_id": "EVT-008",
+      "timestamp": "2026-10-23T11:30:00Z",
+      "event_type": "alert_resolved",
+      "service": "payment-service",
+      "old_version": "2.3.1",
+      "new_version": "2.3.1",
+      "environment": "production",
+      "status": "resolved",
+      "incident_id": "INC-2026-1042",
+      "note": "PaymentFailureRateHigh resolved."
+    }
+  ]
+}

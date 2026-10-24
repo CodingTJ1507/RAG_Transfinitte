@@ -1,0 +1,718 @@
+{
+  "incident_id": "INC-2026-1042",
+  "claims": [
+    {
+      "claim_id": "C-01",
+      "claim_text": "payment-service was deployed to production from 2.3.1 to 2.4.0; the deploy started at 10:02:00 UTC and completed at 10:04:30 UTC.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "IMG-004",
+        "REC-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-001",
+              "EVT-002"
+            ]
+          }
+        },
+        {
+          "source_id": "IMG-004",
+          "locator": {
+            "visible_text": "10:02:00 Deploy started 2.3.1 -> 2.4.0"
+          }
+        }
+      ],
+      "explanation": "Structured events and the timeline image agree.",
+      "confidence_rationale": "Machine record plus matching image."
+    },
+    {
+      "claim_id": "C-02",
+      "claim_text": "The first PAY-401 error appeared at 10:05:12 UTC, 42 seconds after the deploy completed.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "REC-001",
+        "REC-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-002"
+            ]
+          }
+        }
+      ],
+      "explanation": "Earliest PAY-401 log record follows EVT-002.",
+      "confidence_rationale": "Exact timestamps in two structured sources."
+    },
+    {
+      "claim_id": "C-03",
+      "claim_text": "PAY-401 means request validation failed and is returned with HTTP 422, not HTTP 401.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "DOC-002",
+        "IMG-002",
+        "REC-001",
+        "WEB-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "5. Error Codes"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "IMG-002",
+          "locator": {
+            "visible_text": "HTTP/1.1 422 Unprocessable Entity"
+          }
+        },
+        {
+          "source_id": "WEB-003",
+          "locator": {
+            "html_id": "app-codes",
+            "heading": "Application error codes are not HTTP statuses"
+          }
+        }
+      ],
+      "explanation": "Spec error table, logs and screenshot all show 422 for PAY-401.",
+      "confidence_rationale": "Documentation and observed responses agree."
+    },
+    {
+      "claim_id": "C-04",
+      "claim_text": "On 2.4.0 only checkout requests using the legacy card_token field (schema v1-legacy) failed; subscription-renewal requests using payment_method_token succeeded.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "REC-001",
+        "REC-004",
+        "TRN-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-007",
+              "PR-008",
+              "PR-009",
+              "PR-010",
+              "PR-011",
+              "PR-012",
+              "PR-013",
+              "PR-014",
+              "PR-015",
+              "PR-016"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009",
+              "LOG-0015"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "VERIFIED"
+          }
+        }
+      ],
+      "explanation": "Every 2.4.0 request record with v1-legacy failed; every v2 record passed.",
+      "confidence_rationale": "Consistent across all request records in the window, confirmed by handover."
+    },
+    {
+      "claim_id": "C-05",
+      "claim_text": "payment-service 2.4.0 upgraded the validation library schemaguard from 2.8.4 to 3.0.1.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "DOC-004",
+        "REC-001",
+        "TRN-001"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Dependency updates"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0007",
+              "LOG-0026"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-002",
+            "start": "00:00:21.000",
+            "speaker": "Arjun Rao"
+          }
+        }
+      ],
+      "explanation": "Release notes, startup logs and meeting agree.",
+      "confidence_rationale": "Three independent sources."
+    },
+    {
+      "claim_id": "C-06",
+      "claim_text": "In schemaguard 3.0, field aliases are not resolved unless allow_aliases is set to true (default false).",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "WEB-001"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        }
+      ],
+      "explanation": "Documented library behaviour.",
+      "confidence_rationale": "Single documentary source; applies to the library in general."
+    },
+    {
+      "claim_id": "C-07",
+      "claim_text": "The Payment API spec says card_token is a deprecated alias accepted until 2027-03-31, but 2.4.0 rejected requests that used it.",
+      "status": "contradicted",
+      "supporting_source_ids": [
+        "DOC-002",
+        "REC-001",
+        "REC-004"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-011"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009"
+            ]
+          }
+        }
+      ],
+      "explanation": "Documented expectation conflicts with observed behaviour.",
+      "confidence_rationale": "Clear conflict between spec and records."
+    },
+    {
+      "claim_id": "C-08",
+      "claim_text": "Most likely root cause: 2.4.0 stopped resolving the card_token alias because schemaguard 3.0 turns aliases off by default, while the order-service checkout flow still sends card_token.",
+      "status": "inferred",
+      "supporting_source_ids": [
+        "DOC-002",
+        "DOC-004",
+        "REC-001",
+        "TRN-003",
+        "WEB-001"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "breaking-changes",
+            "heading": "Breaking Changes in 3.0.0"
+          }
+        },
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Dependency updates"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "4. Deprecated Fields"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0002",
+              "LOG-0007",
+              "LOG-0009"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        }
+      ],
+      "explanation": "Combines library change, release notes, spec and logs. 2.3.1 logs show alias applied; 2.4.0 logs show card_token ignored.",
+      "confidence_rationale": "Strong but not confirmed: the allow_aliases fix has not been tested (TRN-003)."
+    },
+    {
+      "claim_id": "C-09",
+      "claim_text": "The early credential / API-key hypothesis is not supported.",
+      "status": "contradicted",
+      "supporting_source_ids": [
+        "DOC-002",
+        "DOC-005",
+        "TRN-002"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "DOC-005",
+          "locator": {
+            "heading": "3. Suspected Cause"
+          }
+        },
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-003",
+            "start": "00:00:35.000",
+            "speaker": "Priya Nair"
+          }
+        },
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-004",
+            "start": "00:00:52.000",
+            "speaker": "Arjun Rao"
+          }
+        },
+        {
+          "source_id": "DOC-002",
+          "locator": {
+            "page": 2,
+            "section": "5. Error Codes"
+          }
+        }
+      ],
+      "explanation": "No key rotation since 2026-10-09 and the status is 422, not 401.",
+      "confidence_rationale": "The author of the hypothesis withdrew it during the call."
+    },
+    {
+      "claim_id": "C-10",
+      "claim_text": "The rise in order-service payment-call latency (p95 about 230 ms to about 1,490 ms) was caused by order-service retrying each 422 three times with 200/400/800 ms backoff.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "DOC-001",
+        "REC-001",
+        "REC-002",
+        "REC-005",
+        "TRN-002"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "DOC-001",
+          "locator": {
+            "page": 1,
+            "section": "4. Retry Behaviour Between Services"
+          }
+        },
+        {
+          "source_id": "REC-005",
+          "locator": {
+            "dependency_id": [
+              "DEP-03"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0009",
+              "LOG-0010",
+              "LOG-0011",
+              "LOG-0012",
+              "LOG-0013",
+              "LOG-0014"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-014",
+              "M-016"
+            ]
+          }
+        },
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-008",
+            "start": "00:02:05.000",
+            "speaker": "Lena Fischer"
+          }
+        }
+      ],
+      "explanation": "Logs for trc-5a0e11 show 4 attempts over about 1.45 s, matching the retry policy and metrics.",
+      "confidence_rationale": "Policy, trace and metrics agree."
+    },
+    {
+      "claim_id": "C-11",
+      "claim_text": "payment-service's own p95 latency did not rise after the deploy; it fell from about 180 ms to about 140 ms.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "IMG-001",
+        "REC-002"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-013",
+              "M-015"
+            ]
+          }
+        },
+        {
+          "source_id": "IMG-001",
+          "locator": {
+            "visible_text": "payment-service p95 latency (ms)"
+          }
+        }
+      ],
+      "explanation": "Rejections are fast.",
+      "confidence_rationale": "Direct metric readings."
+    },
+    {
+      "claim_id": "C-12",
+      "claim_text": "Redis or database slowness did not cause the incident.",
+      "status": "inferred",
+      "supporting_source_ids": [
+        "REC-001",
+        "REC-002",
+        "TRN-002"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "TRN-002",
+          "locator": {
+            "cue_id": "cue-007",
+            "start": "00:01:45.000",
+            "speaker": "Tom Okafor"
+          }
+        },
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0021"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-015"
+            ]
+          }
+        }
+      ],
+      "explanation": "Redis slowlog empty and verbal dashboard check flat; payment-service latency fell.",
+      "confidence_rationale": "Infra dashboard itself is not in the dataset, so this rests partly on a verbal report."
+    },
+    {
+      "claim_id": "C-13",
+      "claim_text": "Rollback to 2.3.1 ran from 11:10:00 to 11:13:40 UTC and payment failures returned to about 0% from the 11:15 bucket.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "IMG-001",
+        "REC-002",
+        "REC-003",
+        "REC-004"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-006",
+              "EVT-007"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-043",
+              "M-044"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-017"
+            ]
+          }
+        },
+        {
+          "source_id": "IMG-001",
+          "locator": {
+            "visible_text": "Rollback to 2.3.1 (11:10)"
+          }
+        }
+      ],
+      "explanation": "Events, metrics and request records agree.",
+      "confidence_rationale": "Multiple structured sources."
+    },
+    {
+      "claim_id": "C-14",
+      "claim_text": "The 2.4.0 release notes say no breaking changes were expected, but legacy clients broke.",
+      "status": "contradicted",
+      "supporting_source_ids": [
+        "DOC-004",
+        "REC-004"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "DOC-004",
+          "locator": {
+            "heading": "Compatibility"
+          }
+        },
+        {
+          "source_id": "REC-004",
+          "locator": {
+            "record_id": [
+              "PR-006",
+              "PR-011",
+              "PR-012"
+            ]
+          }
+        }
+      ],
+      "explanation": "Release-note claim conflicts with observed failures.",
+      "confidence_rationale": "Clear conflict."
+    },
+    {
+      "claim_id": "C-15",
+      "claim_text": "Before the deploy, the team knew checkout still sent card_token, believed aliases still worked in 2.4.0, and did not check what the staging smoke suite sends.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "DOC-003",
+        "TRN-001"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-004",
+            "start": "00:00:55.000",
+            "speaker": "Arjun Rao"
+          }
+        },
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-005",
+            "start": "00:01:20.000",
+            "speaker": "Lena Fischer"
+          }
+        },
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-008",
+            "start": "00:02:15.000",
+            "speaker": "Arjun Rao"
+          }
+        },
+        {
+          "source_id": "DOC-003",
+          "locator": {
+            "page": 1,
+            "section": "2. Pre-Deployment Checklist"
+          }
+        }
+      ],
+      "explanation": "What was said in the go/no-go meeting, compared with runbook check P3.",
+      "confidence_rationale": "Direct transcript statements."
+    },
+    {
+      "claim_id": "C-16",
+      "claim_text": "The /healthz check passed after the deploy, but it does not send payment requests, so it could not detect the problem.",
+      "status": "confirmed",
+      "supporting_source_ids": [
+        "DOC-003",
+        "REC-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-003",
+          "locator": {
+            "event_id": [
+              "EVT-003"
+            ]
+          }
+        },
+        {
+          "source_id": "DOC-003",
+          "locator": {
+            "page": 1,
+            "section": "3. Post-Deployment Monitoring"
+          }
+        }
+      ],
+      "explanation": "Event note and runbook agree.",
+      "confidence_rationale": "Documented and recorded."
+    },
+    {
+      "claim_id": "C-17",
+      "claim_text": "The single PAY-504 timeout at 09:47 UTC is unrelated background noise from before the deploy.",
+      "status": "inferred",
+      "supporting_source_ids": [
+        "REC-001",
+        "REC-002"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "REC-001",
+          "locator": {
+            "log_id": [
+              "LOG-0004",
+              "LOG-0005",
+              "LOG-0006"
+            ]
+          }
+        },
+        {
+          "source_id": "REC-002",
+          "locator": {
+            "row_id": [
+              "M-007"
+            ]
+          }
+        }
+      ],
+      "explanation": "One error on 2.3.1, succeeded on retry, 15 minutes before deploy.",
+      "confidence_rationale": "Timing and code differ; cause of the timeout is unknown."
+    },
+    {
+      "claim_id": "C-18",
+      "claim_text": "Who approved the 2.4.0 production deploy is unknown; no approval record exists in the dataset.",
+      "status": "unknown",
+      "supporting_source_ids": [
+        "TRN-001",
+        "TRN-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        },
+        {
+          "source_id": "TRN-001",
+          "locator": {
+            "cue_id": "cue-011",
+            "start": "00:02:58.000",
+            "speaker": "Maya Chen"
+          }
+        }
+      ],
+      "explanation": "Handover says no sign-off recorded.",
+      "confidence_rationale": "Absence of evidence."
+    },
+    {
+      "claim_id": "C-19",
+      "claim_text": "The number of affected customers and the revenue lost are unknown.",
+      "status": "unknown",
+      "supporting_source_ids": [
+        "TRN-003"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        }
+      ],
+      "explanation": "Not calculated per handover.",
+      "confidence_rationale": "Absence of evidence."
+    },
+    {
+      "claim_id": "C-20",
+      "claim_text": "Whether setting allow_aliases: true on 2.4.0 fixes the failures is unknown (not tested).",
+      "status": "unknown",
+      "supporting_source_ids": [
+        "TRN-003",
+        "WEB-001"
+      ],
+      "relevant_locations": [
+        {
+          "source_id": "TRN-003",
+          "locator": {
+            "section": "NOT VERIFIED / STILL OPEN"
+          }
+        },
+        {
+          "source_id": "WEB-001",
+          "locator": {
+            "html_id": "migration",
+            "heading": "Migrating from 2.x"
+          }
+        }
+      ],
+      "explanation": "Library docs suggest it; nobody tested it.",
+      "confidence_rationale": "Untested."
+    }
+  ]
+}

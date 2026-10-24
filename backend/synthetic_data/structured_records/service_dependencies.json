@@ -1,0 +1,104 @@
+{
+  "system": "ShopSphere",
+  "services": [
+    {
+      "name": "api-gateway",
+      "type": "service",
+      "version": "1.9.2"
+    },
+    {
+      "name": "order-service",
+      "type": "service",
+      "version": "5.7.0"
+    },
+    {
+      "name": "payment-service",
+      "type": "service",
+      "version": "2.3.1",
+      "version_note": "Version after rollback at 2026-10-23T11:13:40Z. Ran 2.4.0 from 10:04:30Z to 11:13:40Z."
+    },
+    {
+      "name": "inventory-service",
+      "type": "service",
+      "version": "3.2.0"
+    },
+    {
+      "name": "postgres",
+      "type": "database",
+      "version": "15.6"
+    },
+    {
+      "name": "redis",
+      "type": "cache",
+      "version": "7.2.4"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependency_id": "DEP-01",
+      "upstream": "api-gateway",
+      "downstream": "order-service",
+      "protocol": "HTTP",
+      "purpose": "Route /checkout and /orders"
+    },
+    {
+      "dependency_id": "DEP-02",
+      "upstream": "order-service",
+      "downstream": "inventory-service",
+      "protocol": "HTTP",
+      "purpose": "Reserve stock"
+    },
+    {
+      "dependency_id": "DEP-03",
+      "upstream": "order-service",
+      "downstream": "payment-service",
+      "protocol": "HTTP",
+      "purpose": "POST /v2/payments",
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff_ms": [
+          200,
+          400,
+          800
+        ],
+        "retry_on": "any non-2xx response"
+      }
+    },
+    {
+      "dependency_id": "DEP-04",
+      "upstream": "order-service",
+      "downstream": "postgres",
+      "protocol": "SQL",
+      "purpose": "orders table"
+    },
+    {
+      "dependency_id": "DEP-05",
+      "upstream": "payment-service",
+      "downstream": "postgres",
+      "protocol": "SQL",
+      "purpose": "payments table"
+    },
+    {
+      "dependency_id": "DEP-06",
+      "upstream": "payment-service",
+      "downstream": "redis",
+      "protocol": "RESP",
+      "purpose": "Idempotency-key cache"
+    },
+    {
+      "dependency_id": "DEP-07",
+      "upstream": "inventory-service",
+      "downstream": "postgres",
+      "protocol": "SQL",
+      "purpose": "inventory table"
+    },
+    {
+      "dependency_id": "DEP-08",
+      "upstream": "api-gateway",
+      "downstream": "redis",
+      "protocol": "RESP",
+      "purpose": "Session cache"
+    }
+  ],
+  "note": "upstream calls downstream. Graph has no cycles."
+}
