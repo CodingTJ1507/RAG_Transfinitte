@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 from pydantic import Field, field_validator, model_validator
@@ -38,6 +39,7 @@ class Settings(BaseSettings):
     RETRIEVAL_CANDIDATE_LIMIT: int = 30
     FINAL_EVIDENCE_LIMIT: int = 10
     REQUEST_TIMEOUT_SECONDS: float = 30.0
+    SEARCH_INDEX_TIMEOUT_SECONDS: float = 90.0  # below the frontend's 120 s request timeout
     MAX_SOURCE_FILE_BYTES: int = 25 * 1024 * 1024
     DATASET_DIR: str = ""
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
@@ -51,11 +53,11 @@ class Settings(BaseSettings):
             raise ValueError("value must be greater than zero")
         return value
 
-    @field_validator("REQUEST_TIMEOUT_SECONDS")
+    @field_validator("REQUEST_TIMEOUT_SECONDS", "SEARCH_INDEX_TIMEOUT_SECONDS")
     @classmethod
     def positive_timeout(cls, value: float) -> float:
-        if value <= 0:
-            raise ValueError("request timeout must be greater than zero")
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("timeout must be a finite number greater than zero")
         return value
 
     @model_validator(mode="after")

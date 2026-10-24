@@ -160,8 +160,12 @@ def _parse_vtt(path: Path) -> list[dict[str, Any]]:
         start = timing[0].strip().split(" ", 1)[0]
         end = timing[1].strip().split(" ", 1)[0]
         body = " ".join(lines[timing_index + 1:])
-        speaker_match = re.match(r"^([A-Za-z][A-Za-z0-9 _.-]{0,40}):\s*(.*)$", body)
-        speaker = speaker_match.group(1) if speaker_match else None
+        # WebVTT voice tag "<v Name>text" first, then the plain "Name: text" style.
+        speaker_match = (
+            re.match(r"^<v(?:\.[\w.-]+)?\s+([^>]+)>(.*?)(?:</v>)?$", body)
+            or re.match(r"^([A-Za-z][A-Za-z0-9 _.-]{0,40}):\s*(.*)$", body)
+        )
+        speaker = speaker_match.group(1).strip() if speaker_match else None
         if speaker_match:
             body = speaker_match.group(2)
         unit = _text_unit(body, {"cue_id": cue_id, "start": start, "end": end}, speaker=speaker)

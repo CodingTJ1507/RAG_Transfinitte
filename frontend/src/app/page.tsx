@@ -7,6 +7,7 @@ import { ChatInput } from '../components/ChatInput';
 import { UploadDrawer } from '../components/UploadDrawer';
 import { CitationModal } from '../components/CitationModal';
 import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
+import { DEMO_QUESTIONS } from '../lib/demoQuestions';
 import { Plus, Settings, PanelLeftClose, PanelLeft, Sparkles } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
@@ -51,6 +52,13 @@ function sourceTypeForFile(file: File): IngestedFile['source_type'] {
   return 'document';
 }
 
+// 503s carry a user-safe reason (e.g. search indexes still building); show it instead of the fallback.
+async function serviceErrorMessage(response: Response, fallback: string): Promise<string> {
+  if (response.status !== 503) return fallback;
+  const payload = await response.json().catch(() => null) as { detail?: unknown } | null;
+  return typeof payload?.detail === 'string' ? payload.detail : fallback;
+}
+
 function formatIndexedAt(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
@@ -70,13 +78,6 @@ export default function Home() {
   const [ownerFilter, setOwnerFilter] = useState('');
   const [timeStartFilter, setTimeStartFilter] = useState('');
   const [timeEndFilter, setTimeEndFilter] = useState('');
-
-  const pastConversations = [
-    'Payment Failure Root Cause v2.4.0',
-    'Error Code PAY-401 Occurrences',
-    'Redis Cache vs In-Memory Architecture',
-    'Blameless Outage Audit & Attribution'
-  ];
 
   const handleSendMessage = async (query: string, attachedFiles?: string[]) => {
     const userMsgId = `user-${crypto.randomUUID()}`;
@@ -223,7 +224,10 @@ export default function Home() {
       if (!response.ok) {
         const message = response.status === 413
           ? 'The file exceeds the server upload limit.'
-          : 'The backend could not index this file. Check the file format and service readiness.';
+          : await serviceErrorMessage(
+            response,
+            'The backend could not index this file. Check the file format and service readiness.',
+          );
         throw new Error(message);
       }
       const payload = await response.json() as UploadResponse;
@@ -245,7 +249,10 @@ export default function Home() {
       signal: AbortSignal.timeout(120000),
     });
     if (!response.ok) {
-      throw new Error('Could not index the demo evidence pack. Check backend, Gemini, and Atlas readiness.');
+      throw new Error(await serviceErrorMessage(
+        response,
+        'Could not index the demo evidence pack. Check backend, Gemini, and Atlas readiness.',
+      ));
     }
     const sourcesResponse = await fetch(
       `${API_BASE_URL}/api/ingest/sources?incident_id=INC-2026-1042`,
@@ -291,15 +298,15 @@ export default function Home() {
 
             {/* Recent Chats Section */}
             <div className="px-2">
-              <span className="text-[11px] font-medium text-stone-500 block mb-2">Recent</span>
+              <span className="text-[11px] font-medium text-stone-500 block mb-2">Demo questions</span>
               <div className="space-y-1">
-                {pastConversations.map((item, idx) => (
+                {DEMO_QUESTIONS.map((item) => (
                   <button
-                    key={idx}
-                    onClick={() => handleSendMessage(item)}
+                    key={item.id}
+                    onClick={() => handleSendMessage(item.query)}
                     className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-stone-300/50 text-xs text-stone-700 truncate block transition-colors font-normal cursor-pointer"
                   >
-                    {item}
+                    {item.label}
                   </button>
                 ))}
               </div>
@@ -416,37 +423,16 @@ export default function Home() {
 
               {/* Starter Chips */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-6 text-left">
-                <button
-                  onClick={() => handleSendMessage("Why did payment failures begin after yesterday's deployment?")}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
-                >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Why did payments fail?</span>
-                  <span className="text-stone-500 text-[11px]">Connects logs, v2.4.0 notes, and transcript.</span>
-                </button>
-
-                <button
-                  onClick={() => handleSendMessage('Find every occurrence of error code PAY-401 and compare the affected versions.')}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
-                >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Error PAY-401 occurrences</span>
-                  <span className="text-stone-500 text-[11px]">Exact keyword search across versions.</span>
-                </button>
-
-                <button
-                  onClick={() => handleSendMessage('The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?')}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
-                >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Redis vs In-Memory cache</span>
-                  <span className="text-stone-500 text-[11px]">Detects contradictory documentation.</span>
-                </button>
-
-                <button
-                  onClick={() => handleSendMessage('Which engineer secretly caused the outage, and what exact line of code did they change?')}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
-                >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Outage code blame audit</span>
-                  <span className="text-stone-500 text-[11px]">Tests evidence-based abstention.</span>
-                </button>
+                {DEMO_QUESTIONS.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSendMessage(item.query)}
+                    className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
+                  >
+                    <span className="font-semibold block text-stone-900 mb-0.5">{item.label}</span>
+                    <span className="text-stone-500 text-[11px]">{item.hint}</span>
+                  </button>
+                ))}
               </div>
             </div>
           ) : (
