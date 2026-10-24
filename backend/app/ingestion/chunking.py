@@ -1,25 +1,27 @@
 import hashlib
+import json
 import re
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from app.config import settings
 
 
-def _split_text(text: str, size: int, overlap: int) -> list[str]:
-    words = text.split()
-    if len(words) <= size:
-        return [text]
-    chunks: list[str] = []
-    start = 0
-    while start < len(words):
-        end = min(start + size, len(words))
-        chunks.append(" ".join(words[start:end]))
-        if end == len(words):
-            break
-        start = end - overlap
-    return chunks
+def _split_text(text: str, size: int, overlap: int) -> list[tuple[str, int]]:
+    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+        encoding_name="cl100k_base",
+        chunk_size=size,
+        chunk_overlap=overlap,
+        add_start_index=True,
+        separators=["\n\n", "\n", ". ", " ", ""],
+    )
+    return [
+        (document.page_content, int(document.metadata["start_index"]))
+        for document in splitter.create_documents([text])
+    ]
 
 
 def chunk_evidence_units(
@@ -59,11 +61,12 @@ def chunk_evidence_units(
         for service in source.get("services", []):
             identifiers.setdefault("service", []).append(str(service).casefold())
         pieces = _split_text(text, size, overlap_size)
-        for piece_index, piece in enumerate(pieces):
+        for piece_index, (piece, start_index) in enumerate(pieces):
             locator = dict(unit.get("locator") or {})
+            content_hash = hashlib.sha256(piece.encode("utf-8")).hexdigest()
             chunk_identity = (
-                f"{source_id}:{source.get('source_hash', '')}:{unit_index}:"
-                f"{piece_index}:{hashlib.sha256(piece.encode('utf-8')).hexdigest()}"
+                f"{source_id}:{source.get('source_hash', '')}:"
+                f"{json.dumps(locator, sort_keys=True, default=str)}:{piece_index}:{content_hash}"
             )
             chunk_id = str(uuid5(NAMESPACE_URL, chunk_identity))
             timestamp = locator.get("timestamp") or source.get("created_at")
@@ -80,8 +83,12 @@ def chunk_evidence_units(
                 "source_type": source["source_type"],
                 "title": source.get("title", source_id),
                 "text": piece,
+                "content_hash": content_hash,
+                "chunk_index": piece_index,
+                "start_index": start_index,
                 "locator": locator,
                 "incident_id": source.get("incident_id"),
+                "owner": source.get("owner"),
                 "version": source.get("version"),
                 "timestamp": timestamp,
                 "source_hash": source.get("source_hash"),

@@ -1,6 +1,8 @@
 import json
 import logging
+import math
 from pathlib import Path
+from typing import TypedDict
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -15,6 +17,49 @@ from app.retrieval.hybrid_search import perform_hybrid_search
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+class RetrievalMetrics(TypedDict):
+    retrieved_source_ids: list[str]
+    recall_at_k: float
+    precision_at_k: float
+    ndcg_at_k: float
+    reciprocal_rank: float
+    hit: bool
+
+
+def retrieval_metrics(
+    retrieved_source_ids: list[str],
+    expected_source_ids: list[str],
+    top_k: int,
+) -> RetrievalMetrics:
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
+    ranked = list(dict.fromkeys(retrieved_source_ids))[:top_k]
+    relevant = list(dict.fromkeys(expected_source_ids))
+    relevant_set = set(relevant)
+    found = set(ranked) & relevant_set
+    reciprocal_rank = next(
+        (1 / rank for rank, source_id in enumerate(ranked, start=1) if source_id in relevant_set),
+        0.0,
+    )
+    dcg = sum(
+        1 / math.log2(rank + 1)
+        for rank, source_id in enumerate(ranked, start=1)
+        if source_id in relevant_set
+    )
+    ideal_dcg = sum(
+        1 / math.log2(rank + 1)
+        for rank in range(1, min(len(relevant), top_k) + 1)
+    )
+    return {
+        "retrieved_source_ids": ranked,
+        "recall_at_k": len(found) / len(relevant) if relevant else 1.0,
+        "precision_at_k": len(found) / top_k,
+        "ndcg_at_k": dcg / ideal_dcg if ideal_dcg else 0.0,
+        "reciprocal_rank": reciprocal_rank,
+        "hit": bool(found),
+    }
 
 
 def _load_evaluation_files() -> tuple[list[dict], dict[str, dict], str]:
@@ -47,23 +92,23 @@ def run_benchmark(
         results: list[EvaluationCaseResult] = []
         for item in questions:
             question_id = item["question_id"]
-            expected_sources = expected_by_id[question_id]["required_source_ids"]
+            expected_sources = list(dict.fromkeys(expected_by_id[question_id]["required_source_ids"]))
             filters = {"incident_id": item.get("incident_id", incident_id)}
             citations = perform_hybrid_search(item["question"], top_k=top_k, filters=filters)
-            retrieved = [citation.source_id for citation in citations]
-            expected_rank = next(
-                (rank for rank, source_id in enumerate(retrieved, start=1) if source_id in expected_sources),
-                None,
+            metrics = retrieval_metrics(
+                [citation.source_id for citation in citations],
+                expected_sources,
+                top_k,
             )
-            found = set(retrieved) & set(expected_sources)
-            recall = len(found) / len(expected_sources) if expected_sources else 1.0
-            reciprocal_rank = 1 / expected_rank if expected_rank else 0.0
+            retrieved = metrics["retrieved_source_ids"]
+            recall = metrics["recall_at_k"]
             abstention_expected = bool(item.get("abstention_required"))
             abstained: bool | None = None
             citations_valid: bool | None = None
+            faithfulness: float | None = None
             answer_evaluated = False
             failures = []
-            if not found and expected_sources:
+            if not metrics["hit"] and expected_sources:
                 failures.append("No required expected source was retrieved")
 
             if generate_answers:
@@ -77,6 +122,16 @@ def run_benchmark(
                     citation.chunk_id and citation.chunk_id in {item.chunk_id for item in citations}
                     for citation in [*report.supporting_evidence, *report.conflicting_evidence]
                 )
+                factual_claims = [
+                    claim for claim in report.claims
+                    if claim.classification != "unknown"
+                ]
+                faithfulness = (
+                    sum(claim.verification_status == "verified" for claim in factual_claims)
+                    / len(factual_claims)
+                    if factual_claims
+                    else 1.0 if report.is_abstention else 0.0
+                )
                 answer_evaluated = True
                 if abstained != abstention_expected:
                     failures.append("Abstention behavior did not match expected behavior")
@@ -88,11 +143,14 @@ def run_benchmark(
                 expected_source_ids=expected_sources,
                 retrieved_source_ids=retrieved,
                 recall_at_k=recall,
-                reciprocal_rank=reciprocal_rank,
-                hit=bool(found),
+                precision_at_k=metrics["precision_at_k"],
+                ndcg_at_k=metrics["ndcg_at_k"],
+                reciprocal_rank=metrics["reciprocal_rank"],
+                hit=metrics["hit"],
                 abstention_expected=abstention_expected,
                 abstained=abstained,
                 citations_valid=citations_valid,
+                faithfulness=faithfulness,
                 answer_evaluated=answer_evaluated,
                 passed=not failures,
                 failure_reasons=failures,
@@ -102,8 +160,13 @@ def run_benchmark(
             "mean_recall_at_k": sum(result.recall_at_k for result in results) / count if count else 0.0,
             "mean_reciprocal_rank": sum(result.reciprocal_rank for result in results) / count if count else 0.0,
             "hit_rate": sum(result.hit for result in results) / count if count else 0.0,
+            "mean_precision_at_k": sum(result.precision_at_k for result in results) / count if count else 0.0,
+            "mean_ndcg_at_k": sum(result.ndcg_at_k for result in results) / count if count else 0.0,
             "pass_rate": sum(result.passed for result in results) / count if count else 0.0,
         }
+        evaluated_answers = [result.faithfulness for result in results if result.faithfulness is not None]
+        if evaluated_answers:
+            aggregate["mean_faithfulness"] = sum(evaluated_answers) / len(evaluated_answers)
         return EvaluationReport(
             status="completed" if count else "no_cases",
             cases_run=count,

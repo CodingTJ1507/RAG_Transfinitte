@@ -9,9 +9,9 @@ interface UploadDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   files: IngestedFile[];
-  onAddFiles: (files: IngestedFile[]) => void;
+  onAddFiles: (files: File[]) => Promise<void>;
   onRemoveFile: (id: string) => void;
-  onLoadSyntheticPack: () => void;
+  onLoadSyntheticPack: () => Promise<void>;
 }
 
 export const UploadDrawer: React.FC<UploadDrawerProps> = ({
@@ -24,29 +24,34 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
 }) => {
   const [selectedType, setSelectedType] = useState<SourceType | 'all'>('all');
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [loadingPack, setLoadingPack] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
-  const handleManualUpload = (uploadedFiles: File[]) => {
-    const newItems: IngestedFile[] = uploadedFiles.map((file, idx) => {
-      let type: SourceType = 'document';
-      const ext = file.name.split('.').pop()?.toLowerCase();
-      if (ext === 'html' || ext === 'htm') type = 'webpage';
-      else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext || '')) type = 'image';
-      else if (file.name.includes('transcript') || ext === 'wav' || ext === 'mp3') type = 'transcript';
-      else if (['json', 'csv', 'log'].includes(ext || '')) type = 'structured_record';
+  const handleManualUpload = async (uploadedFiles: File[]) => {
+    setUploadError(null);
+    setIsUploading(true);
+    try {
+      await onAddFiles(uploadedFiles);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Could not index the selected file.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
-      return {
-        id: `manual-${Date.now()}-${idx}`,
-        name: file.name,
-        source_type: type,
-        size: `${(file.size / 1024).toFixed(1)} KB`,
-        uploadedAt: 'Just now',
-        status: 'indexed',
-        chunkCount: Math.max(1, Math.floor(file.size / 600))
-      };
-    });
-    onAddFiles(newItems);
+  const handleLoadPack = async () => {
+    setUploadError(null);
+    setLoadingPack(true);
+    try {
+      await onLoadSyntheticPack();
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Could not index the demo evidence pack.');
+    } finally {
+      setLoadingPack(false);
+    }
   };
 
   const filteredFiles = selectedType === 'all' 
@@ -67,7 +72,7 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
                 Evidence Collection
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Indexed in MongoDB Atlas Vector Search
+                Indexed in MongoDB Atlas
               </p>
             </div>
             <button
@@ -87,11 +92,12 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
               Load the 5 benchmark evidence files for the payment failure incident.
             </p>
             <button
-              onClick={onLoadSyntheticPack}
+              onClick={() => void handleLoadPack()}
+              disabled={loadingPack || isUploading}
               className="mt-2.5 px-3 py-1.5 text-xs font-medium bg-stone-800 text-stone-50 hover:bg-stone-900 rounded-lg w-full flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
             >
               <FolderSync className="w-3.5 h-3.5" />
-              <span>Load 5 Source Files</span>
+              <span>{loadingPack ? 'Indexing evidence pack…' : 'Load incident evidence pack'}</span>
             </button>
           </div>
 
@@ -102,7 +108,7 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
             onDrop={(e) => {
               e.preventDefault();
               setDragActive(false);
-              if (e.dataTransfer.files) handleManualUpload(Array.from(e.dataTransfer.files));
+              if (e.dataTransfer.files) void handleManualUpload(Array.from(e.dataTransfer.files));
             }}
             className={`mt-4 border border-dashed rounded-xl p-4 text-center transition-all ${
               dragActive ? 'border-stone-700 bg-[#efebe4]' : 'border-stone-300 bg-[#f3efe8]/50 hover:border-stone-400'
@@ -112,15 +118,25 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
               type="file"
               id="file-upload"
               multiple
+              accept=".pdf,.docx,.md,.html,.htm,.vtt,.txt,.json,.csv,.png,.jpg,.jpeg,.webp"
               className="hidden"
-              onChange={(e) => e.target.files && handleManualUpload(Array.from(e.target.files))}
+              disabled={isUploading || loadingPack}
+              onChange={(e) => {
+                if (e.target.files) void handleManualUpload(Array.from(e.target.files));
+                e.target.value = '';
+              }}
             />
             <label htmlFor="file-upload" className="cursor-pointer block">
               <Upload className="w-5 h-5 text-stone-400 mx-auto mb-1" />
-              <p className="text-xs font-medium text-stone-700">Upload evidence files</p>
-              <p className="text-[11px] text-stone-400 mt-0.5">PDF, HTML, PNG, Transcripts, JSON</p>
+              <p className="text-xs font-medium text-stone-700">
+                {isUploading ? 'Uploading and indexing…' : 'Upload evidence files'}
+              </p>
+              <p className="text-[11px] text-stone-400 mt-0.5">PDF, DOCX, Markdown, HTML, VTT, text, JSON, CSV, PNG</p>
             </label>
           </div>
+          {uploadError && (
+            <p className="mt-2 text-xs text-rose-700" role="alert">{uploadError}</p>
+          )}
 
           {/* Category Filter Chips */}
           <div className="mt-4 flex flex-wrap gap-1.5">
