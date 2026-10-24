@@ -33,6 +33,13 @@ class InvestigationRequest(BaseModel):
     time_range_end: datetime | None = None
     version: str | None = None
 
+    @field_validator("query")
+    @classmethod
+    def query_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Query must not be empty or whitespace-only")
+        return value
+
     @field_validator("time_range_start", "time_range_end")
     @classmethod
     def require_timezone_for_time_filters(cls, value: datetime | None) -> datetime | None:

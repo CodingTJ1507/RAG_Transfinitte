@@ -38,8 +38,12 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 60
     RETRIEVAL_CANDIDATE_LIMIT: int = 30
     FINAL_EVIDENCE_LIMIT: int = 10
-    REQUEST_TIMEOUT_SECONDS: float = 60.0
+    REQUEST_TIMEOUT_SECONDS: float = 30.0
     SEARCH_INDEX_TIMEOUT_SECONDS: float = 90.0  # below the frontend's 120 s request timeout
+    GEMINI_TIMEOUT_SECONDS: float = 30.0
+    GEMINI_MAX_RETRIES: int = 2
+    GEMINI_MAX_BACKOFF_SECONDS: float = 8.0
+    GEMINI_RETRY_BUDGET_SECONDS: float = 20.0
     MAX_SOURCE_FILE_BYTES: int = 25 * 1024 * 1024
     DATASET_DIR: str = ""
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
@@ -53,7 +57,15 @@ class Settings(BaseSettings):
             raise ValueError("value must be greater than zero")
         return value
 
-    @field_validator("REQUEST_TIMEOUT_SECONDS", "SEARCH_INDEX_TIMEOUT_SECONDS")
+    @field_validator("GEMINI_MAX_RETRIES")
+    @classmethod
+    def non_negative_integer(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("value must be non-negative")
+        return value
+
+    @field_validator("REQUEST_TIMEOUT_SECONDS", "SEARCH_INDEX_TIMEOUT_SECONDS",
+                     "GEMINI_TIMEOUT_SECONDS", "GEMINI_MAX_BACKOFF_SECONDS", "GEMINI_RETRY_BUDGET_SECONDS")
     @classmethod
     def positive_timeout(cls, value: float) -> float:
         if not math.isfinite(value) or value <= 0:
