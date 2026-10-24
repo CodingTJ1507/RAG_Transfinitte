@@ -3,8 +3,8 @@
 import React from 'react';
 import { ChatMessage as ChatMessageType, Citation } from '../lib/types';
 import { ThinkingAccordion } from './ThinkingAccordion';
-import { CitationCard } from './CitationCard';
-import { AlertTriangle, ShieldAlert, CheckCircle, Clock, ChevronRight, User, Cpu } from 'lucide-react';
+import { InlineCitationBadge, CompactCitationPill } from './CitationCard';
+import { AlertTriangle, ShieldAlert, CheckCircle, Clock, ChevronRight, User, Cpu, Bookmark } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -21,7 +21,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-5">
+      <div className="flex justify-end mb-4">
         <div className="flex items-start space-x-2.5 max-w-[85%] md:max-w-[70%] flex-row-reverse space-x-reverse">
           <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center shrink-0 shadow-md text-xs font-bold">
             <User className="w-4 h-4 text-slate-200" />
@@ -44,10 +44,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   }
 
   const report = message.report;
+  const citations = report?.supporting_evidence || [];
 
   return (
-    <div className="flex justify-start mb-7">
-      <div className="flex items-start space-x-3 max-w-[95%] md:max-w-[85%] w-full">
+    <div className="flex justify-start mb-6">
+      <div className="flex items-start space-x-3 max-w-[98%] md:max-w-[90%] w-full">
         {/* Assistant Avatar */}
         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-300/40 text-xs font-bold mt-1">
           <Cpu className="w-4 h-4 text-white" />
@@ -85,17 +86,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 <span>Conflicting Evidence Detected</span>
               </div>
               <p className="text-xs font-medium leading-relaxed text-amber-800">
-                Direct contradiction between sources: The runbook specifies an external Redis cluster, while recent architecture diagrams specify an in-memory cache.
+                Direct contradiction between sources: Runbook v1.8 specifies external Redis cluster, while Architecture Diagram v2.2 specifies an in-memory cache.
               </p>
             </div>
           )}
 
-          {/* Likely Root Cause / Primary Narrative */}
+          {/* Likely Root Cause with Gemini-style inline reference badges */}
           {report?.likely_root_cause && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Diagnosis & Primary Finding
+                  Incident Diagnosis
                 </h3>
                 {report.confidence_score > 0 && (
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-semibold">
@@ -103,58 +104,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-sm font-semibold text-slate-800 leading-relaxed bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                {report.likely_root_cause}
-              </p>
-            </div>
-          )}
 
-          {/* General content if no root cause */}
-          {!report?.likely_root_cause && message.content && (
-            <div className="text-sm text-slate-700 leading-relaxed mb-4 whitespace-pre-wrap">
-              {message.content}
-            </div>
-          )}
-
-          {/* Incident Timeline (if present) */}
-          {report?.timeline && report.timeline.length > 0 && (
-            <div className="mb-5">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center space-x-1.5">
-                <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Reconstructed Cross-Source Timeline</span>
-              </h4>
-              <div className="space-y-2 border-l-2 border-indigo-100 pl-3 ml-1.5">
-                {report.timeline.map((evt, idx) => (
-                  <div key={idx} className="relative text-xs">
-                    <span className="absolute -left-[19px] top-1.5 w-2.5 h-2.5 rounded-full bg-indigo-500 ring-4 ring-white"></span>
-                    <div className="flex items-baseline space-x-2">
-                      <span className="font-mono font-bold text-indigo-700 text-[11px] shrink-0">
-                        {evt.timestamp}
-                      </span>
-                      <span className="text-slate-700 font-medium">
-                        {evt.event}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Supporting Evidence Citations (Grid) */}
-          {report?.supporting_evidence && report.supporting_evidence.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Grounded Citations ({report.supporting_evidence.length} Sources)
-                </h4>
-                <span className="text-[10px] text-slate-400">Click to view source</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {report.supporting_evidence.map((citation, idx) => (
-                  <CitationCard
+              {/* Text with Inline Reference Links (Gemini Style) */}
+              <div className="text-sm text-slate-800 leading-relaxed font-normal bg-slate-50/60 p-3.5 rounded-xl border border-slate-100">
+                <span>{report.likely_root_cause}</span>
+                {/* Inline Citations */}
+                {citations.slice(0, 3).map((cit, idx) => (
+                  <InlineCitationBadge
                     key={idx}
-                    citation={citation}
+                    citation={cit}
                     index={idx}
                     onInspect={onInspectCitation}
                   />
@@ -163,12 +121,53 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             </div>
           )}
 
+          {/* General content if no report */}
+          {!report?.likely_root_cause && message.content && (
+            <div className="text-sm text-slate-700 leading-relaxed mb-4 whitespace-pre-wrap">
+              {message.content}
+            </div>
+          )}
+
+          {/* Incident Timeline with Inline Badges */}
+          {report?.timeline && report.timeline.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Reconstructed Timeline</span>
+              </h4>
+              <div className="space-y-2 border-l-2 border-indigo-100 pl-3 ml-1.5">
+                {report.timeline.map((evt, idx) => {
+                  const matchingCitation = citations.find(c => c.source_id === evt.source_id) || citations[idx % citations.length];
+                  return (
+                    <div key={idx} className="relative text-xs flex items-baseline justify-between flex-wrap gap-1">
+                      <span className="absolute -left-[19px] top-1.5 w-2.5 h-2.5 rounded-full bg-indigo-500 ring-4 ring-white"></span>
+                      <div className="flex items-baseline space-x-2">
+                        <span className="font-mono font-bold text-indigo-700 text-[11px] shrink-0">
+                          {evt.timestamp}
+                        </span>
+                        <span className="text-slate-700 font-medium">
+                          {evt.event}
+                        </span>
+                      </div>
+                      {matchingCitation && (
+                        <InlineCitationBadge
+                          citation={matchingCitation}
+                          onInspect={onInspectCitation}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Recommended Actions */}
           {report?.recommended_actions && report.recommended_actions.length > 0 && (
-            <div className="mt-4 pt-3.5 border-t border-slate-100">
+            <div className="mb-4 pt-3 border-t border-slate-100">
               <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Recommended Engineering Next Steps</span>
+                <span>Recommended Actions</span>
               </h4>
               <ul className="space-y-1.5">
                 {report.recommended_actions.map((act, idx) => (
@@ -178,6 +177,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Bottom References Bar: Minimal Gemini-style Sources Row */}
+          {citations.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              <div className="flex items-center space-x-1.5 mb-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <Bookmark className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Sources & Ground-Truth Passages ({citations.length})</span>
+              </div>
+              <div className="flex items-center space-x-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
+                {citations.map((citation, idx) => (
+                  <CompactCitationPill
+                    key={idx}
+                    citation={citation}
+                    index={idx}
+                    onInspect={onInspectCitation}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
