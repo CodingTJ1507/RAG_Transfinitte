@@ -183,6 +183,21 @@ Answer evaluation adds citation validity, abstention match, and verified-claim
 faithfulness. This is a project benchmark, not a substitute for comparing RAGAS,
 DeepEval, or production feedback/tracing tools on a larger human-labeled set.
 
+## Explain vector search
+
+With the backend database available and the demo evidence imported, run from
+`backend`:
+
+```powershell
+python -m scripts.explain_vector_search "Why did payment requests start failing?" --top-k 10 --incident INC-2026-1042 --num-candidates 150 300 600
+```
+
+The script embeds the question once, saves each Atlas `executionStats` response
+under `backend/eval_results/`, and prints wall time, result count, chunk IDs,
+and the fraction of the largest candidate count's results also returned by
+each smaller candidate count. Compare the measurements before changing the
+candidate-count default.
+
 ## Tests and dataset validation
 
 From the repository root:
