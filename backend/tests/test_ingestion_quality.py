@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 from app.ingestion.chunking import chunk_evidence_units
 from app.ingestion.parsers import load_manifest, parse_source
@@ -157,3 +158,37 @@ class OwnerTests(unittest.TestCase):
         }
         self.assertEqual(by_log["LOG-0001"], "Unassigned")
         self.assertEqual(by_log["LOG-0002"], "Payments Team")
+
+
+class ImageReadingTests(unittest.TestCase):
+    def test_image_text_comes_from_gemini(self):
+        reading = {
+            "description": "Debug console showing a failed payment.",
+            "visible_text": [
+                "HTTP/1.1 422 Unprocessable Entity",
+                '"trace_id": "trc-5a10c4"',
+            ],
+        }
+        with (
+            patch("app.ingestion.parsers.describe_image", return_value=reading),
+            patch("app.ingestion.parsers.settings.IMAGE_ANALYSIS_ENABLED", True),
+        ):
+            parsed = parse_demo("IMG-002")
+        unit = parsed.units[0]
+        self.assertIn("trc-5a10c4", unit["text"])
+        self.assertEqual(unit["locator"]["analysis"], "gemini_vision")
+        self.assertEqual(unit["metadata"]["visible_text"], reading["visible_text"])
+        self.assertEqual(parsed.source["analysis_status"], "vision_analyzed")
+
+    def test_gemini_failure_falls_back_to_metadata(self):
+        with (
+            patch(
+                "app.ingestion.parsers.describe_image",
+                side_effect=RuntimeError("quota"),
+            ),
+            patch("app.ingestion.parsers.settings.IMAGE_ANALYSIS_ENABLED", True),
+        ):
+            parsed = parse_demo("IMG-002")
+        unit = parsed.units[0]
+        self.assertEqual(unit["locator"]["analysis"], "metadata_only")
+        self.assertEqual(parsed.source["analysis_status"], "metadata_only")

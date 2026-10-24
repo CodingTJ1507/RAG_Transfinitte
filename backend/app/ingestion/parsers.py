@@ -1,6 +1,7 @@
 import csv
 import hashlib
 import json
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +12,10 @@ import pymupdf
 from docx import Document
 
 from app.config import settings
+from app.services.gemini import describe_image
 
+logger = logging.getLogger(__name__)
+IMAGE_MIME_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
 
 @dataclass
 class ParsedSource:
@@ -475,6 +479,40 @@ def _source_owner(source: dict[str, Any], suffix: str, units: list[dict[str, Any
     return "Unassigned"
 
 
+def _read_image(path: Path, suffix: str) -> dict[str, Any] | None:
+    if not settings.IMAGE_ANALYSIS_ENABLED:
+        return None
+    try:
+        return describe_image(path.read_bytes(), IMAGE_MIME_TYPES[suffix])
+    except RuntimeError:
+        logger.warning("Gemini image reading failed for %s; falling back to metadata", path.name)
+        return None
+
+
+def _parse_image(path: Path, source: dict[str, Any], suffix: str) -> list[dict[str, Any]]:
+    from PIL import Image
+
+    with Image.open(path) as image:
+        image.verify()
+    title = source.get("title", path.name)
+    description = source.get("description", "")
+    reading = _read_image(path, suffix)
+    if reading is None:
+        unit = _text_unit(
+            f"{title}. Image metadata description: {description}",
+            {"image": path.name, "analysis": "metadata_only", "ocr_analyzed": False},
+        )
+    else:
+        manifest_part = f" {description}." if description else ""
+        unit = _text_unit(
+            f"{title}.{manifest_part} Description: {reading['description']} "
+            f"Visible text: {' | '.join(reading['visible_text'])}",
+            {"image": path.name, "analysis": "gemini_vision"},
+            visible_text=reading["visible_text"],
+        )
+    return [unit] if unit else []
+
+
 def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
     relative_path = source.get("file_path")
     if not isinstance(relative_path, str):
@@ -498,19 +536,8 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         units = _parse_json(path)
     elif suffix == ".csv":
         units = _parse_csv(path)
-    elif suffix in {".png", ".jpg", ".jpeg", ".webp"}:
-        from PIL import Image
-
-        with Image.open(path) as image:
-            image.verify()
-        description = source.get("description", "")
-        units = []
-        unit = _text_unit(
-            f"{source.get('title', path.name)}. Image metadata description: {description}",
-            {"image": path.name, "analysis": "metadata_only", "ocr_analyzed": False},
-        )
-        if unit:
-            units.append(unit)
+    elif suffix in IMAGE_MIME_TYPES:
+        units = _parse_image(path, source, suffix)
     else:
         raise ValueError(f"Unsupported source format: {suffix or 'unknown'}")
 
@@ -521,8 +548,12 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         "size_bytes": path.stat().st_size,
         "owner": _source_owner(source, suffix, units),
         "analysis_status": (
-            "metadata_only"
-            if suffix in {".png", ".jpg", ".jpeg", ".webp"}
+            (
+                "vision_analyzed"
+                if units and units[0]["locator"].get("analysis") == "gemini_vision"
+                else "metadata_only"
+            )
+            if suffix in IMAGE_MIME_TYPES
             else ("parsed" if units else "no_extractable_text")
         ),
     }
