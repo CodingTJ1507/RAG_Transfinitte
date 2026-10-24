@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowUp, Plus, Mic } from 'lucide-react';
+import { DEMO_QUESTIONS } from '../lib/demoQuestions';
 
 interface ChatInputProps {
   onSendMessage: (query: string, attachedFiles?: string[]) => void;
@@ -17,25 +18,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [input, setInput] = useState<string>('');
   const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const quickScenarios = [
-    {
-      label: 'Payment failure root cause',
-      query: "Why did payment failures begin after yesterday's deployment?"
-    },
-    {
-      label: 'Find error code PAY-401',
-      query: 'Find every occurrence of error code PAY-401 and compare the affected versions.'
-    },
-    {
-      label: 'Redis vs In-memory conflict',
-      query: 'The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?'
-    },
-    {
-      label: 'Outage code blame audit',
-      query: 'Which engineer secretly caused the outage, and what exact line of code did they change?'
-    }
-  ];
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -67,9 +49,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       <div className="max-w-3xl mx-auto space-y-2.5">
         {/* Minimal Chips for Tests */}
         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
-          {quickScenarios.map((scenario, idx) => (
+          {DEMO_QUESTIONS.map((scenario) => (
             <button
-              key={idx}
+              key={scenario.id}
               onClick={() => onSendMessage(scenario.query)}
               disabled={isLoading}
               className="px-3 py-1.5 rounded-full bg-[#eae5dc] hover:bg-[#dfd9cd] text-stone-700 border border-stone-300/40 text-xs transition-colors shrink-0 disabled:opacity-50 font-normal cursor-pointer"

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _wait_for_index(collection, name: str) -> dict | None:
-    deadline = time.monotonic() + settings.REQUEST_TIMEOUT_SECONDS
+    deadline = time.monotonic() + settings.SEARCH_INDEX_TIMEOUT_SECONDS
     current = None
     while time.monotonic() < deadline:
         indexes = list(collection.list_search_indexes())
