@@ -25,7 +25,9 @@ Traditional RAG tools fail because they only parse single documents, strip away 
 - Reconstructs a chronological incident timeline.
 - Detects conflicting documentation (e.g. Redis vs in-memory cache).
 - Performs **Evidence-Based Abstention** on ungrounded or speculative requests.
-- Presents results in a calm, warm, Gemini-style chat console with transparent reasoning steps.
+- Presents results in the Concord.ai chat console (navy and cyan theme) with transparent reasoning steps.
+
+> **Name:** the product is now **Concord.ai** (PR #11). "TraceIQ" in older files means the same product; do not rename files or identifiers.
 
 > **Start here:** [`docs/TraceIQ_PRD.pdf`](docs/TraceIQ_PRD.pdf) is the current product and build plan (v2). Where this file disagrees with the PRD or the code, the PRD and the code win.
 
@@ -218,7 +220,7 @@ When contributing code or documentation to this repository, **strictly adhere to
 - If the retrieved evidence is empty or does not support the premise, the system **must invoke abstention** (`is_abstention: true`) rather than generating plausible fiction.
 
 ### 🎨 Rule 4: Frontend Theme Integrity
-- The frontend uses a **calm, warm, Gemini-style layout** (alabaster and oatmeal tones, sidebar, pill input, muted citation badges). Keep it; do not redesign.
+- The frontend uses the **Concord.ai theme** (navy `#162748`, cyan `#09bec1`, light slate surfaces; tokens in `frontend/src/app/globals.css`), with the sidebar, pill input and citation badges. Reuse the existing colours and classes; do not redesign.
 - **Avoid**: dark sci-fi themes, loud neon glowing borders, or generic AI chat templates.
 - **Maintain**: the ChatGPT/DeepSeek-style collapsible `ThinkingAccordion`, clickable `CitationCard`s, and `CitationModal` inspector.
 
