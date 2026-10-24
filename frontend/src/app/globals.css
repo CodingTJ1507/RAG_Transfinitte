@@ -1,26 +1,109 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f4f6fa;
+  --foreground: #1e293b;
+  --card-bg: #ffffff;
+  --clay-shadow-dark: rgba(160, 174, 196, 0.35);
+  --clay-shadow-light: rgba(255, 255, 255, 0.95);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Claymorphic Outer 3D Card */
+.clay-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 8px 8px 20px var(--clay-shadow-dark), -8px -8px 20px var(--clay-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Small Claymorphic Card */
+.clay-card-sm {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 5px 5px 14px var(--clay-shadow-dark), -5px -5px 14px var(--clay-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+/* Inset / Recessed Clay Element (for search inputs, active states) */
+.clay-inset {
+  background: #eef2f7;
+  border-radius: 16px;
+  box-shadow: inset 3px 3px 7px rgba(160, 174, 196, 0.4), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Tactile Claymorphic Pill Button */
+.clay-btn {
+  background: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 4px 4px 12px var(--clay-shadow-dark), -4px -4px 12px var(--clay-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clay-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 6px 6px 16px var(--clay-shadow-dark), -6px -6px 16px var(--clay-shadow-light);
+}
+
+.clay-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 2px 2px 5px rgba(160, 174, 196, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.95);
+}
+
+/* Primary Indigo Clay Button */
+.clay-btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: 4px 4px 14px rgba(79, 70, 229, 0.35), -3px -3px 10px rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clay-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 6px 6px 18px rgba(79, 70, 229, 0.45), -4px -4px 12px rgba(255, 255, 255, 1);
+}
+
+.clay-btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: inset 2px 2px 6px rgba(49, 46, 129, 0.5), inset -2px -2px 6px rgba(255, 255, 255, 0.2);
+}
+
+/* Subtle Shimmer for Thinking State */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(0.98); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s infinite ease-in-out;
+}
+
+/* Custom Clean Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
