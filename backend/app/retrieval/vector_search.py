@@ -87,6 +87,30 @@ def citation_from_document(document: dict[str, Any], score: float | None = None)
     )
 
 
+def vector_search_stage(
+    vector: list[float],
+    top_k: int,
+    filters: dict[str, Any] | None = None,
+    num_candidates: int | None = None,
+) -> dict[str, Any]:
+    candidates = (
+        num_candidates
+        if num_candidates is not None
+        else max(top_k * 15, settings.RETRIEVAL_CANDIDATE_LIMIT)
+    )
+    vector_filter = build_vector_filter(filters)
+    stage: dict[str, Any] = {
+        "index": settings.MONGODB_VECTOR_INDEX,
+        "path": "embedding",
+        "queryVector": vector,
+        "numCandidates": candidates,
+        "limit": top_k,
+    }
+    if vector_filter:
+        stage["filter"] = vector_filter
+    return {"$vectorSearch": stage}
+
+
 def perform_vector_search(
     query: str,
     top_k: int = 5,
@@ -103,16 +127,7 @@ def perform_vector_search(
         )
     vector = embed_query(query)
     pipeline = [
-        {
-            "$vectorSearch": {
-                "index": settings.MONGODB_VECTOR_INDEX,
-                "path": "embedding",
-                "queryVector": vector,
-                "numCandidates": max(top_k * 15, settings.RETRIEVAL_CANDIDATE_LIMIT),
-                "limit": top_k,
-                **({"filter": build_vector_filter(filters)} if build_vector_filter(filters) else {}),
-            }
-        },
+        vector_search_stage(vector, top_k, filters),
         {"$addFields": {"retrieval_score": {"$meta": "vectorSearchScore"}}},
     ]
     try:
