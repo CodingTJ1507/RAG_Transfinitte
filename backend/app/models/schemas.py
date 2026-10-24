@@ -25,13 +25,20 @@ class Citation(BaseModel):
 
 
 class InvestigationRequest(BaseModel):
-    query: str = Field(min_length=3, max_length=4000)
+    query: str = Field(min_length=1, max_length=4000)
     incident_id: str | None = None
     owner: str | None = None
     source_types: list[SourceType] | None = None
     time_range_start: datetime | None = None
     time_range_end: datetime | None = None
     version: str | None = None
+
+    @field_validator("query")
+    @classmethod
+    def query_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Query must not be empty or whitespace-only")
+        return value
 
     @field_validator("time_range_start", "time_range_end")
     @classmethod

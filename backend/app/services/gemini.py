@@ -1,9 +1,12 @@
 import json
 import logging
-from typing import Any
+import time
+from collections.abc import Callable
+from typing import Any, TypeVar
 
+import httpx
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 from app.config import settings
 
@@ -16,6 +19,8 @@ IMAGE_PROMPT = (
     "(every readable line exactly as written, top to bottom)."
 )
 
+T = TypeVar("T")
+
 
 def get_gemini_client() -> genai.Client:
     global _client
@@ -25,14 +30,36 @@ def get_gemini_client() -> genai.Client:
         _client = genai.Client(
             api_key=settings.GEMINI_API_KEY,
             http_options=types.HttpOptions(
-                timeout=int(settings.REQUEST_TIMEOUT_SECONDS * 1000),
+                timeout=int(settings.GEMINI_TIMEOUT_SECONDS * 1000),
             ),
         )
     return _client
 
 
+def call_with_retries(call: Callable[[], T]) -> T:
+    deadline = time.monotonic() + settings.GEMINI_RETRY_BUDGET_SECONDS
+    for attempt in range(settings.GEMINI_MAX_RETRIES + 1):
+        try:
+            return call()
+        except (errors.APIError, httpx.TimeoutException) as exc:
+            code = getattr(exc, "code", None)
+            retryable = code in (429, 500, 503) or isinstance(exc, httpx.TimeoutException)
+            delay = min(float(2 ** attempt), settings.GEMINI_MAX_BACKOFF_SECONDS)
+            if not retryable or attempt == settings.GEMINI_MAX_RETRIES or time.monotonic() + delay > deadline:
+                raise
+            logger.warning(
+                "Gemini request retryable error (attempt %d/%d, code=%s): %s; retrying in %.1fs...",
+                attempt + 1,
+                settings.GEMINI_MAX_RETRIES,
+                code,
+                exc,
+                delay,
+            )
+            time.sleep(delay)
+
+
 def generate_json(system_instruction: str, payload: dict[str, Any]) -> dict[str, Any]:
-    try:
+    def _invoke() -> dict[str, Any]:
         response = get_gemini_client().models.generate_content(
             model=settings.LLM_MODEL,
             contents=json.dumps(payload, ensure_ascii=False),
@@ -48,6 +75,9 @@ def generate_json(system_instruction: str, payload: dict[str, Any]) -> dict[str,
         if not isinstance(result, dict):
             raise ValueError("Gemini response must be a JSON object")
         return result
+
+    try:
+        return call_with_retries(_invoke)
     except Exception as exc:
         logger.exception("Gemini JSON generation failed")
         raise RuntimeError("Gemini generation failed; check API configuration and retry") from exc
@@ -55,7 +85,7 @@ def generate_json(system_instruction: str, payload: dict[str, Any]) -> dict[str,
 
 def describe_image(data: bytes, mime_type: str) -> dict[str, Any]:
     try:
-        response = get_gemini_client().models.generate_content(
+        response = call_with_retries(lambda: get_gemini_client().models.generate_content(
             model=settings.LLM_MODEL,
             contents=[
                 types.Part.from_bytes(data=data, mime_type=mime_type),
@@ -65,7 +95,7 @@ def describe_image(data: bytes, mime_type: str) -> dict[str, Any]:
                 temperature=0,
                 response_mime_type="application/json",
             ),
-        )
+        ))
         if not response.text:
             raise ValueError("Gemini returned an empty image description")
         result = json.loads(response.text)
