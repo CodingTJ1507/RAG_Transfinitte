@@ -1,0 +1,35 @@
+[
+  {
+    "source_id": "WEB-001",
+    "title": "schemaguard 3.0 Release Notes",
+    "canonical_url": "https://schemaguard.example/releases/3.0",
+    "local_file_path": "raw/webpages/dependency_release_notes.html",
+    "source_type": "webpage",
+    "published_at": "2026-09-15T00:00:00Z",
+    "version": "3.0.1",
+    "content_hash": "sha256:3544d48eebc7298f917a91058bde8b500cfd781865216d9f76ca8832a164a2da",
+    "fictional": true
+  },
+  {
+    "source_id": "WEB-002",
+    "title": "Troubleshooting Payment Request Validation Errors",
+    "canonical_url": "https://devnotes.example/payments/request-validation-errors",
+    "local_file_path": "raw/webpages/payment_validation_troubleshooting.html",
+    "source_type": "webpage",
+    "published_at": "2026-05-03T00:00:00Z",
+    "version": "1.0",
+    "content_hash": "sha256:4e53257dcd1e1d488c817ff9a431b28679c386635982794eed9860c60060a567",
+    "fictional": true
+  },
+  {
+    "source_id": "WEB-003",
+    "title": "HTTP Status Codes: 4xx Reference",
+    "canonical_url": "https://httpref.example/status/4xx",
+    "local_file_path": "raw/webpages/http_error_reference.html",
+    "source_type": "webpage",
+    "published_at": "2025-11-20T00:00:00Z",
+    "version": "1.0",
+    "content_hash": "sha256:2733b91f1020a3e10e736fffef2a272cf677a15a7c996e975b19dfd722d5460c",
+    "fictional": true
+  }
+]

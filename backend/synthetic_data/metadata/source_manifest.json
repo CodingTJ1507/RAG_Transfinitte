@@ -1,0 +1,472 @@
+{
+  "dataset": "TraceIQ synthetic incident dataset",
+  "incident_id": "INC-2026-1042",
+  "note": "raw/webpages/sources.json is an index file for webpages, not a separate evidence source.",
+  "sources": [
+    {
+      "source_id": "DOC-001",
+      "title": "ShopSphere Architecture Overview",
+      "source_type": "document",
+      "format": "pdf",
+      "file_path": "documents/architecture_overview.pdf",
+      "created_at": "2026-09-02T09:00:00Z",
+      "published_at": "2026-09-02T09:00:00Z",
+      "version": "1.3",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "api-gateway",
+        "order-service",
+        "payment-service",
+        "inventory-service",
+        "postgres",
+        "redis"
+      ],
+      "tags": [
+        "architecture",
+        "retries",
+        "payment-flow"
+      ],
+      "description": "Services, checkout payment flow, and order-service retry policy.",
+      "sha256": "4d4281ae80230ff837412ec7e83410b3143238c25b279a9f8046ac995eb61c58",
+      "synthetic": true
+    },
+    {
+      "source_id": "DOC-002",
+      "title": "Payment API Specification v2.0",
+      "source_type": "document",
+      "format": "pdf",
+      "file_path": "documents/payment_api_specification.pdf",
+      "created_at": "2026-08-14T09:00:00Z",
+      "published_at": "2026-08-14T09:00:00Z",
+      "version": "2.0",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "api",
+        "schema",
+        "error-codes",
+        "deprecation"
+      ],
+      "description": "Expected payment request fields, deprecated card_token alias, and error code table.",
+      "sha256": "ed56bfe03f6d6e378b44b2226e54609aec8a7f8c3ee235dde850c0d92aa40cad",
+      "synthetic": true
+    },
+    {
+      "source_id": "DOC-003",
+      "title": "Payment Service Deployment Runbook",
+      "source_type": "document",
+      "format": "pdf",
+      "file_path": "documents/deployment_runbook.pdf",
+      "created_at": "2026-07-30T09:00:00Z",
+      "published_at": "2026-07-30T09:00:00Z",
+      "version": "3.1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service"
+      ],
+      "tags": [
+        "runbook",
+        "diagnostics",
+        "rollback"
+      ],
+      "description": "Pre-deploy checklist, safe diagnostic checks and rollback considerations.",
+      "sha256": "62b1ab9a94e63f9a9b76caddc86f00501b8f039109158efe4a0cd46b4e0f5e48",
+      "synthetic": true
+    },
+    {
+      "source_id": "DOC-004",
+      "title": "payment-service 2.4.0 Release Notes",
+      "source_type": "document",
+      "format": "pdf",
+      "file_path": "documents/release_notes_2_4_0.pdf",
+      "created_at": "2026-10-21T09:00:00Z",
+      "published_at": "2026-10-21T09:00:00Z",
+      "version": "2.4.0",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service"
+      ],
+      "tags": [
+        "release-notes",
+        "dependencies"
+      ],
+      "description": "Changes in payment-service 2.4.0, including the schemaguard upgrade.",
+      "sha256": "7b5da64467a2e0bfeb8862f074a032deac5202f47a7a10911fd91a7352c21485",
+      "synthetic": true
+    },
+    {
+      "source_id": "DOC-005",
+      "title": "Initial Incident Report INC-2026-1042",
+      "source_type": "document",
+      "format": "pdf",
+      "file_path": "documents/incident_initial_report.pdf",
+      "created_at": "2026-10-23T10:18:00Z",
+      "published_at": "2026-10-23T10:18:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "incident",
+        "initial-report",
+        "hypothesis"
+      ],
+      "description": "First responder report written at 10:18 UTC. Contains an early, unverified hypothesis.",
+      "sha256": "a31eb0a21ca61f6a5b19a2202b611224ee6e03ae6265322135f4e763eb33577e",
+      "synthetic": true
+    },
+    {
+      "source_id": "WEB-001",
+      "title": "schemaguard 3.0 Release Notes",
+      "source_type": "webpage",
+      "format": "html",
+      "file_path": "webpages/dependency_release_notes.html",
+      "created_at": "2026-09-15T00:00:00Z",
+      "published_at": "2026-09-15T00:00:00Z",
+      "version": "3.0.1",
+      "incident_id": "INC-2026-1042",
+      "services": [],
+      "tags": [
+        "dependency",
+        "library",
+        "breaking-changes"
+      ],
+      "description": "Fictional library release notes: alias resolution became opt-in in 3.0.",
+      "sha256": "3544d48eebc7298f917a91058bde8b500cfd781865216d9f76ca8832a164a2da",
+      "synthetic": true,
+      "canonical_url": "https://schemaguard.example/releases/3.0"
+    },
+    {
+      "source_id": "WEB-002",
+      "title": "Troubleshooting Payment Request Validation Errors",
+      "source_type": "webpage",
+      "format": "html",
+      "file_path": "webpages/payment_validation_troubleshooting.html",
+      "created_at": "2026-05-03T00:00:00Z",
+      "published_at": "2026-05-03T00:00:00Z",
+      "version": "1.0",
+      "incident_id": "INC-2026-1042",
+      "services": [],
+      "tags": [
+        "troubleshooting",
+        "validation",
+        "background"
+      ],
+      "description": "General background article. Not specific to ShopSphere.",
+      "sha256": "4e53257dcd1e1d488c817ff9a431b28679c386635982794eed9860c60060a567",
+      "synthetic": true,
+      "canonical_url": "https://devnotes.example/payments/request-validation-errors"
+    },
+    {
+      "source_id": "WEB-003",
+      "title": "HTTP Status Codes: 4xx Reference",
+      "source_type": "webpage",
+      "format": "html",
+      "file_path": "webpages/http_error_reference.html",
+      "created_at": "2025-11-20T00:00:00Z",
+      "published_at": "2025-11-20T00:00:00Z",
+      "version": "1.0",
+      "incident_id": "INC-2026-1042",
+      "services": [],
+      "tags": [
+        "http",
+        "status-codes",
+        "background"
+      ],
+      "description": "General reference on 401 vs 422 and application error codes.",
+      "sha256": "2733b91f1020a3e10e736fffef2a272cf677a15a7c996e975b19dfd722d5460c",
+      "synthetic": true,
+      "canonical_url": "https://httpref.example/status/4xx"
+    },
+    {
+      "source_id": "IMG-001",
+      "title": "Payments Monitoring Dashboard",
+      "source_type": "image",
+      "format": "png",
+      "file_path": "images/monitoring_dashboard.png",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "metrics",
+        "dashboard",
+        "latency",
+        "error-rate"
+      ],
+      "description": "Failure rate and p95 latency, 09:30-11:55 UTC, with deploy and rollback markers.",
+      "sha256": "84a8d17dc9dd0dc0de03352ce987e49fa43211a56b4d2ad00088764cb0220056",
+      "synthetic": true
+    },
+    {
+      "source_id": "IMG-002",
+      "title": "Payment Error Screenshot",
+      "source_type": "image",
+      "format": "png",
+      "file_path": "images/payment_error_screenshot.png",
+      "created_at": "2026-10-23T10:11:47Z",
+      "published_at": "2026-10-23T10:11:47Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "order-service",
+        "payment-service"
+      ],
+      "tags": [
+        "error",
+        "screenshot",
+        "PAY-401"
+      ],
+      "description": "order-service debug console showing a 422 PAY-401 response for req-1107.",
+      "sha256": "376748ee6b44605dee20d9a7ac49683c1cfb5b7f5d1acdc258c88e33a226022d",
+      "synthetic": true
+    },
+    {
+      "source_id": "IMG-003",
+      "title": "Service Architecture Diagram",
+      "source_type": "image",
+      "format": "png",
+      "file_path": "images/service_architecture_diagram.png",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "api-gateway",
+        "order-service",
+        "payment-service",
+        "inventory-service",
+        "postgres",
+        "redis"
+      ],
+      "tags": [
+        "architecture",
+        "dependencies"
+      ],
+      "description": "Boxes and arrows for the six core components.",
+      "sha256": "59f1c0a663b6cc15088c1f20edb9d48bb28af37d69dc4a954fac199d6e211ed4",
+      "synthetic": true
+    },
+    {
+      "source_id": "IMG-004",
+      "title": "Deployment Timeline",
+      "source_type": "image",
+      "format": "png",
+      "file_path": "images/deployment_timeline.png",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service"
+      ],
+      "tags": [
+        "timeline",
+        "deployment",
+        "rollback"
+      ],
+      "description": "Timeline of deploy, first error, alert, incident, rollback.",
+      "sha256": "a3f762a0507a732197f32c4fe43e5d436ec55c75ce4d72c3df3f86bc9c8010f4",
+      "synthetic": true
+    },
+    {
+      "source_id": "TRN-001",
+      "title": "Deployment Go/No-Go Meeting",
+      "source_type": "transcript",
+      "format": "vtt",
+      "file_path": "transcripts/deployment_meeting.vtt",
+      "created_at": "2026-10-23T09:30:00Z",
+      "published_at": "2026-10-23T09:30:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "meeting",
+        "pre-deploy"
+      ],
+      "description": "Go/no-go meeting for 2.4.0 (starts 09:30 UTC).",
+      "sha256": "3319d336786c29acbaac1281060fe9307d7af4a39f70768a5b10b107c11a2cb2",
+      "synthetic": true,
+      "recording_start": "2026-10-23T09:30:00Z"
+    },
+    {
+      "source_id": "TRN-002",
+      "title": "Incident Discussion Call",
+      "source_type": "transcript",
+      "format": "vtt",
+      "file_path": "transcripts/incident_discussion.vtt",
+      "created_at": "2026-10-23T10:20:00Z",
+      "published_at": "2026-10-23T10:20:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service",
+        "redis",
+        "postgres"
+      ],
+      "tags": [
+        "incident",
+        "hypotheses"
+      ],
+      "description": "Incident call with competing hypotheses (starts 10:20 UTC).",
+      "sha256": "33bafe2c5965b7896133cc3847ddba361380c4318cd4a83b20f69864c0a6a25c",
+      "synthetic": true,
+      "recording_start": "2026-10-23T10:20:00Z"
+    },
+    {
+      "source_id": "TRN-003",
+      "title": "Engineering Handover Note",
+      "source_type": "transcript",
+      "format": "txt",
+      "file_path": "transcripts/engineering_handover.txt",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "handover",
+        "status",
+        "open-questions"
+      ],
+      "description": "Day-to-evening on-call handover: verified facts and open items.",
+      "sha256": "979301adb1c7369cf64f433ab5dca6e754f83dbd0ec69a49ff50df9c4b3a46d8",
+      "synthetic": true
+    },
+    {
+      "source_id": "REC-001",
+      "title": "Application Logs",
+      "source_type": "structured",
+      "format": "json",
+      "file_path": "structured_records/application_logs.json",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "api-gateway",
+        "order-service",
+        "payment-service",
+        "redis"
+      ],
+      "tags": [
+        "logs",
+        "errors",
+        "traces"
+      ],
+      "description": "30 log records, 09:41-11:21 UTC, keyed by log_id.",
+      "sha256": "514fee69569c6bb53a8a33d2a7a151bc67d422f323c631017f13b0db6113d138",
+      "synthetic": true
+    },
+    {
+      "source_id": "REC-002",
+      "title": "Service Metrics",
+      "source_type": "structured",
+      "format": "csv",
+      "file_path": "structured_records/metrics.csv",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "metrics",
+        "latency",
+        "error-rate"
+      ],
+      "description": "5-minute buckets 09:30-11:55 UTC, keyed by row_id.",
+      "sha256": "0e0bf0720b3b6eba29659226c8ad19bead2a5e1d190fa299f250f314111eb615",
+      "synthetic": true
+    },
+    {
+      "source_id": "REC-003",
+      "title": "Deployment Events",
+      "source_type": "structured",
+      "format": "json",
+      "file_path": "structured_records/deployment_events.json",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service"
+      ],
+      "tags": [
+        "deployment",
+        "rollback",
+        "alerts"
+      ],
+      "description": "Deploy, alert, incident and rollback events, keyed by event_id.",
+      "sha256": "4e6be5ed8acc5d48d0452bf77354f4917f3d298fbc8af05e308a7825e93ae782",
+      "synthetic": true
+    },
+    {
+      "source_id": "REC-004",
+      "title": "Payment Request Records",
+      "source_type": "structured",
+      "format": "json",
+      "file_path": "structured_records/payment_requests.json",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "payment-service",
+        "order-service"
+      ],
+      "tags": [
+        "requests",
+        "schema",
+        "validation"
+      ],
+      "description": "Per-attempt request metadata with schema variant and result, keyed by record_id.",
+      "sha256": "38fac892389cd4dc3858536083f108f404161ccad578ab0cbab1bec4f10e083c",
+      "synthetic": true
+    },
+    {
+      "source_id": "REC-005",
+      "title": "Service Dependencies",
+      "source_type": "structured",
+      "format": "json",
+      "file_path": "structured_records/service_dependencies.json",
+      "created_at": "2026-10-23T12:00:00Z",
+      "published_at": "2026-10-23T12:00:00Z",
+      "version": "1",
+      "incident_id": "INC-2026-1042",
+      "services": [
+        "api-gateway",
+        "order-service",
+        "payment-service",
+        "inventory-service",
+        "postgres",
+        "redis"
+      ],
+      "tags": [
+        "dependencies",
+        "retry-policy"
+      ],
+      "description": "Service graph with retry policy on DEP-03.",
+      "sha256": "6a10a2ac0f8039438fe60bc5ea68d92213231e35709a2fcd4882cf4b17d6419c",
+      "synthetic": true
+    }
+  ]
+}

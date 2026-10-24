@@ -1,0 +1,80 @@
+WEBVTT
+
+NOTE
+Meeting: INC-2026-1042 incident call
+Recording start: 2026-10-23T10:20:00Z (cue times are offsets from this start)
+Participants: Tom Okafor (incident commander), Priya Nair (platform engineer),
+Arjun Rao (payment-service developer), Lena Fischer (order-service developer), Maya Chen (release manager)
+Fictional people and synthetic content.
+
+cue-001
+00:00:04.000 --> 00:00:19.000
+<v Tom Okafor>Let's start. Payments have been failing since about 10:05. The alert fired at 10:09. Priya's first report suspects a credential problem.
+
+cue-002
+00:00:20.000 --> 00:00:34.000
+<v Priya Nair>Yes. PAY-401 sounded like unauthorized, so I guessed an expired or rotated API key.
+
+cue-003
+00:00:35.000 --> 00:00:51.000
+<v Priya Nair>Update: I checked the secret store. The order-service key was last rotated on October 9. Nothing changed today.
+
+cue-004
+00:00:52.000 --> 00:01:09.000
+<v Arjun Rao>Also, the HTTP status on these errors is 422, not 401. In our spec PAY-401 means request validation failed. The code name is confusing.
+
+cue-005
+00:01:10.000 --> 00:01:26.000
+<v Priya Nair>OK, then credentials are probably not it. I would still keep it open until we know more.
+
+cue-006
+00:01:28.000 --> 00:01:44.000
+<v Tom Okafor>Second idea: is something slow in redis or postgres? The order-service p95 jumped to about one and a half seconds.
+
+cue-007
+00:01:45.000 --> 00:02:03.000
+<v Tom Okafor>I'm looking at the infra dashboard now. Redis p95 is flat at around 2 milliseconds and postgres looks normal.
+
+cue-008
+00:02:05.000 --> 00:02:29.000
+<v Lena Fischer>The latency is on our side. order-service retries any non-2xx three times, with 200, 400 and 800 millisecond waits. That is about 1.4 seconds per failed order. payment-service itself got faster, because rejections are quick.
+
+cue-009
+00:02:30.000 --> 00:02:54.000
+<v Arjun Rao>The payment-service logs say: required field payment_method_token is missing, unrecognized field card_token ignored. So checkout requests that send card_token fail. Renewal requests pass.
+
+cue-010
+00:02:55.000 --> 00:03:09.000
+<v Lena Fischer>But the spec says card_token is an alias until 2027. So 2.4.0 broke the contract.
+
+cue-011
+00:03:10.000 --> 00:03:21.000
+<v Arjun Rao>Or checkout should have moved months ago. ORD-552 has been open since August.
+
+cue-012
+00:03:22.000 --> 00:03:34.000
+<v Tom Okafor>We are not deciding blame now. What changed in 2.4.0 that could touch aliases?
+
+cue-013
+00:03:35.000 --> 00:03:49.000
+<v Arjun Rao>Really only the schemaguard upgrade. I don't know yet if 3.0 changed how aliases work. I'll read their changelog.
+
+cue-014
+00:03:50.000 --> 00:03:57.000
+<v Maya Chen>Could it be a difference in the config file?
+
+cue-015
+00:03:58.000 --> 00:04:07.000
+<v Arjun Rao>Possibly. I have not compared the configs yet.
+
+cue-016
+00:04:10.000 --> 00:04:38.000
+<v Tom Okafor>Actions. Arjun: reproduce in staging with a card_token body. Lena: confirm from the request records which flows fail. Decision: if checkout is still failing at 11:00 we roll back. The release notes say no database migrations, so rollback should be safe.
+
+cue-017
+00:04:40.000 --> 00:04:47.000
+<v Lena Fischer>I would rather roll back now.
+
+cue-018
+00:04:48.000 --> 00:04:58.000
+<v Tom Okafor>Understood. We give Arjun until 11:00. Next update in the incident channel.

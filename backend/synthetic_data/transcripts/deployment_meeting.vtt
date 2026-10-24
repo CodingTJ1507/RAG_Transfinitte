@@ -1,0 +1,56 @@
+WEBVTT
+
+NOTE
+Meeting: payment-service 2.4.0 go/no-go
+Recording start: 2026-10-23T09:30:00Z (cue times are offsets from this start)
+Participants: Maya Chen (release manager), Arjun Rao (payment-service developer),
+Lena Fischer (order-service developer), Tom Okafor (on-call SRE)
+Fictional people and synthetic content.
+
+cue-001
+00:00:05.000 --> 00:00:19.000
+<v Maya Chen>This is the go/no-go for payment-service 2.4.0. The plan is to start the deploy at 10:02.
+
+cue-002
+00:00:21.000 --> 00:00:46.000
+<v Arjun Rao>It is a maintenance release. The main change is the schemaguard upgrade from 2.8.4 to 3.0.1, plus better error messages and a new metric. No database migrations.
+
+cue-003
+00:00:48.000 --> 00:00:54.000
+<v Tom Okafor>Any change to the API that clients see?
+
+cue-004
+00:00:55.000 --> 00:01:17.000
+<v Arjun Rao>No. The public API stays the same. Old field aliases still work, so nothing should change for clients.
+
+cue-005
+00:01:20.000 --> 00:01:40.000
+<v Lena Fischer>Just flagging: the order-service checkout flow still sends card_token. Moving it to payment_method_token is ticket ORD-552, planned for next sprint. The renewal flow already uses payment_method_token.
+
+cue-006
+00:01:41.000 --> 00:01:59.000
+<v Arjun Rao>That is fine. card_token is a supported alias until March 2027 according to the spec.
+
+cue-007
+00:02:03.000 --> 00:02:13.000
+<v Tom Okafor>Did the staging smoke tests cover the checkout flow?
+
+cue-008
+00:02:15.000 --> 00:02:32.000
+<v Arjun Rao>Smoke tests passed. I think the suite uses the renewal payload, but I have not checked.
+
+cue-009
+00:02:34.000 --> 00:02:40.000
+<v Tom Okafor>Can we check that before we deploy?
+
+cue-010
+00:02:41.000 --> 00:02:56.000
+<v Maya Chen>We are short on time. Arjun, can you look at it afterwards? Let's not block on it.
+
+cue-011
+00:02:58.000 --> 00:03:18.000
+<v Maya Chen>Plan: deploy at 10:02, Tom watches the dashboard for 15 minutes, and we roll back by the runbook if needed.
+
+cue-012
+00:03:20.000 --> 00:03:28.000
+<v Tom Okafor>OK. I will be watching the payment dashboard.
