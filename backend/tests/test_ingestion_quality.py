@@ -64,3 +64,65 @@ class TextSectionTests(unittest.TestCase):
                 [unit["locator"]["section"] for unit in parsed.units],
                 ["Part 1", "Part 2", "Part 3"],
             )
+
+
+class PdfSectionTests(unittest.TestCase):
+    @staticmethod
+    def sections(source_id):
+        return [
+            (unit["locator"]["page"], unit["locator"].get("section_path", []))
+            for unit in parse_demo(source_id).units
+        ]
+
+    def test_spec_sections_and_pages(self):
+        found = self.sections("DOC-002")
+        self.assertIn((7, ["4. Deprecated Fields"]), found)
+        self.assertTrue(
+            any(page == 8 and "5. Error Codes" in path for page, path in found)
+        )
+
+    def test_release_notes_and_architecture_sections(self):
+        self.assertTrue(
+            any(
+                page == 4 and "2.1 Dependency Updates" in section
+                for page, section in self.sections("DOC-004")
+            )
+        )
+        self.assertTrue(
+            any(
+                page == 5 and "4. Compatibility" in section
+                for page, section in self.sections("DOC-004")
+            )
+        )
+        self.assertTrue(
+            any(
+                page == 7 and "4. Retry Behaviour Between Services" in section
+                for page, section in self.sections("DOC-001")
+            )
+        )
+
+    def test_cover_owner_and_noise_removed(self):
+        owners = {
+            source_id: parse_demo(source_id).units[0]["metadata"].get("cover_owner")
+            for source_id in ("DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-005")
+        }
+        self.assertEqual(
+            owners,
+            {
+                "DOC-001": "Platform Team",
+                "DOC-002": "Payments Team",
+                "DOC-003": "SRE Team",
+                "DOC-004": "Payments Team",
+                "DOC-005": None,
+            },
+        )
+        units = parse_demo("DOC-002").units
+        text = " ".join(unit["text"] for unit in units)
+        self.assertNotIn("Page 3 of 10", text)
+        self.assertNotIn(". . .", text)
+        self.assertFalse(any(unit["locator"]["page"] == 2 for unit in units))
+        self.assertIn("Figure 1-1", text)
+        self.assertIn(
+            "order-service",
+            " ".join(unit["text"] for unit in parse_demo("DOC-001").units),
+        )

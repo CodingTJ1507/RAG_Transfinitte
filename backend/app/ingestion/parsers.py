@@ -68,10 +68,120 @@ def _text_unit(text: str, locator: dict[str, Any], **metadata: Any) -> dict[str,
 def _parse_pdf(path: Path) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
     with pymupdf.open(path) as document:
+        section_path: list[str] = []
+        pages: list[tuple[Any, list[dict[str, Any]]]] = []
+        has_section_headings = False
+
         for page_number, page in enumerate(document, start=1):
-            unit = _text_unit(page.get_text("text"), {"page": page_number})
-            if unit:
-                units.append(unit)
+            lines = []
+            for block in page.get_text("dict").get("blocks", []):
+                if block.get("type") != 0:
+                    continue
+                for line in block.get("lines", []):
+                    spans = [span for span in line.get("spans", []) if span["text"].strip()]
+                    text = "".join(span["text"] for span in spans).strip()
+                    if not text:
+                        continue
+                    bold = all("Bold" in span["font"] for span in spans)
+                    level = (
+                        1 if bold and all(round(span["size"]) == 16 for span in spans)
+                        else 2 if bold and all(round(span["size"]) == 12 for span in spans)
+                        else 0
+                    )
+                    has_section_headings = has_section_headings or level > 0
+                    lines.append({
+                        "text": text,
+                        "spans": spans,
+                        "bbox": line["bbox"],
+                        "level": level,
+                    })
+            pages.append((page, lines))
+
+        for page_number, (page, lines) in enumerate(pages, start=1):
+            if page_number == 1:
+                cover_owner = None
+                for index, line in enumerate(lines[:-1]):
+                    if line["text"] == "Owner" and all(
+                        "Bold" in span["font"] for span in line["spans"]
+                    ):
+                        cover_owner = lines[index + 1]["text"]
+                        break
+                cover_text = " ".join(line["text"] for line in lines)
+                unit = _text_unit(
+                    cover_text,
+                    {"page": 1, "section": "Cover", "section_path": ["Cover"]},
+                    **({"cover_owner": cover_owner} if cover_owner else {}),
+                )
+                if unit:
+                    units.append(unit)
+                continue
+
+            if (
+                any(line["text"] == "Contents" for line in lines)
+                and sum(
+                    bool(re.search(r"(?:\.\s+){3,}", line["text"]))
+                    for line in lines
+                ) >= 3
+            ):
+                continue
+
+            filtered_lines = [
+                line for line in lines
+                if not (
+                    all(round(span["size"]) <= 8 for span in line["spans"])
+                    and (
+                        line["bbox"][1] < page.rect.height * 0.06
+                        or line["bbox"][1] > page.rect.height * 0.93
+                    )
+                )
+            ]
+
+            if not has_section_headings:
+                page_text = " ".join(line["text"] for line in filtered_lines)
+                unit = _text_unit(
+                    page_text,
+                    {"page": page_number, "section": "", "section_path": []},
+                )
+                if unit:
+                    units.append(unit)
+                continue
+
+            current_path = list(section_path)
+            current_lines: list[str] = []
+            has_body = False
+
+            def add_page_section() -> None:
+                if not current_lines or not has_body:
+                    return
+                unit = _text_unit(
+                    " ".join(current_lines),
+                    {
+                        "page": page_number,
+                        "section": current_path[-1] if current_path else "",
+                        "section_path": list(current_path),
+                    },
+                )
+                if unit:
+                    units.append(unit)
+
+            for line in filtered_lines:
+                level = line["level"]
+                if level:
+                    add_page_section()
+                    heading = line["text"]
+                    if level == 1:
+                        section_path = [heading]
+                    else:
+                        section_path = [section_path[0], heading] if section_path else [heading]
+                    current_path = list(section_path)
+                    current_lines = [heading]
+                    has_body = False
+                else:
+                    if not current_lines:
+                        current_path = list(section_path)
+                    current_lines.append(line["text"])
+                    has_body = True
+            add_page_section()
     return units
 
 
