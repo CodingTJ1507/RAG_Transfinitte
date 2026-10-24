@@ -1,4 +1,5 @@
 import os
+from typing import List, Union
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -12,16 +13,40 @@ class Settings(BaseSettings):
     MONGODB_DATABASE: str = "traceiq_db"
     MONGODB_VECTOR_INDEX: str = "traceiq_vector_index"
     
-    # LLM Settings
-    OPENAI_API_KEY: str = ""
-    LLM_MODEL: str = "gpt-4o"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    # Provider Selection: "gemini" or "openai"
+    LLM_PROVIDER: str = "gemini"
     
-    # CORS
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ]
+    # Google Gemini Settings (Free Tier)
+    GEMINI_API_KEY: str = ""
+    GOOGLE_API_KEY: str = ""
+    
+    # OpenAI Settings (Fallback / Alternative)
+    OPENAI_API_KEY: str = ""
+    
+    # Model Configurations
+    LLM_MODEL: str = "gemini-3.1-flash-lite"
+    EMBEDDING_MODEL: str = "models/gemini-embedding-001"
+    EMBEDDING_DIMENSIONS: int = 3072
+    
+    # CORS (Stored as string to prevent JSON parsing issues with comma-separated env values)
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        val = self.CORS_ORIGINS
+        if isinstance(val, list):
+            return val
+        if val.startswith('[') and val.endswith(']'):
+            import json
+            try:
+                return json.loads(val)
+            except Exception:
+                pass
+        return [i.strip() for i in val.split(',') if i.strip()]
+
+    def get_google_api_key(self) -> str:
+        """Returns the configured Gemini/Google API key."""
+        return self.GEMINI_API_KEY or self.GOOGLE_API_KEY or os.environ.get("GEMINI_API_KEY", "") or os.environ.get("GOOGLE_API_KEY", "")
 
     class Config:
         env_file = ".env"

@@ -186,13 +186,14 @@ In MongoDB Atlas, create a Search Index on the `chunks` collection:
 - **Collection**: `chunks`
 - **Index Name**: `traceiq_vector_index`
 - **Index Definition (JSON)**:
+> Note: For Google Gemini (`models/text-embedding-004`), use `"numDimensions": 768`. For OpenAI (`text-embedding-3-small`), use `1536`.
 ```json
 {
   "fields": [
     {
       "type": "vector",
       "path": "embedding",
-      "numDimensions": 1536,
+      "numDimensions": 768,
       "similarity": "cosine"
     },
     {
