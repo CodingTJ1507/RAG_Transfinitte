@@ -186,6 +186,7 @@ All settings live in `backend/.env` (see `backend/.env.example`).
 | `MAX_SOURCE_FILE_BYTES` | `26214400` | Upload size limit (25 MB) |
 | `SEARCH_INDEX_TIMEOUT_SECONDS` | `90` | Wait for indexes to become queryable |
 | `CORS_ORIGINS` | | Comma-separated frontend origins |
+| `SERVICE_OWNERS` | `{"payment-service": "Payments Team", "order-service": "Orders Team"}` | Service to owning team, for the owner filter |
 
 Changing the embedding model or dimensions means recreating the vector index and re-embedding
 every chunk; vectors from different models must never share an index.

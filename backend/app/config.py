@@ -1,3 +1,4 @@
+import json
 import math
 from pathlib import Path
 
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
     MAX_SOURCE_FILE_BYTES: int = 25 * 1024 * 1024
     DATASET_DIR: str = ""
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    SERVICE_OWNERS: str = '{"payment-service": "Payments Team", "order-service": "Orders Team"}'
 
     @field_validator("EMBEDDING_DIMENSIONS", "EMBEDDING_BATCH_SIZE", "CHUNK_SIZE",
                      "RETRIEVAL_CANDIDATE_LIMIT", "FINAL_EVIDENCE_LIMIT",
@@ -72,6 +74,20 @@ class Settings(BaseSettings):
             raise ValueError("timeout must be a finite number greater than zero")
         return value
 
+    @field_validator("SERVICE_OWNERS")
+    @classmethod
+    def valid_service_owners(cls, value: str) -> str:
+        try:
+            service_owners = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise ValueError("SERVICE_OWNERS must be a JSON object of strings") from exc
+        if not isinstance(service_owners, dict) or any(
+            not isinstance(service, str) or not isinstance(owner, str)
+            for service, owner in service_owners.items()
+        ):
+            raise ValueError("SERVICE_OWNERS must be a JSON object of strings")
+        return value
+
     @model_validator(mode="after")
     def valid_chunk_overlap(self) -> "Settings":
         if self.CHUNK_OVERLAP < 0 or self.CHUNK_OVERLAP >= self.CHUNK_SIZE:
@@ -81,6 +97,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def service_owner_map(self) -> dict[str, str]:
+        return json.loads(self.SERVICE_OWNERS)
 
     @property
     def dataset_path(self) -> Path:

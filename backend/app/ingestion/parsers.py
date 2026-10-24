@@ -461,6 +461,20 @@ def _parse_csv(path: Path) -> list[dict[str, Any]]:
     return units
 
 
+def _source_owner(source: dict[str, Any], suffix: str, units: list[dict[str, Any]]) -> str:
+    """First of: the manifest or upload owner, the PDF cover owner, the first service's team."""
+    owner = source.get("owner")
+    if isinstance(owner, str) and owner.strip():
+        return owner
+    cover_owner = units[0].get("metadata", {}).get("cover_owner") if suffix == ".pdf" and units else None
+    if isinstance(cover_owner, str) and cover_owner.strip():
+        return cover_owner
+    services = source.get("services") or []
+    if isinstance(services, list) and services:
+        return settings.service_owner_map.get(services[0], "Unassigned")
+    return "Unassigned"
+
+
 def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
     relative_path = source.get("file_path")
     if not isinstance(relative_path, str):
@@ -505,6 +519,7 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         "file_path": relative_path.replace("\\", "/"),
         "source_hash": source_hash,
         "size_bytes": path.stat().st_size,
+        "owner": _source_owner(source, suffix, units),
         "analysis_status": (
             "metadata_only"
             if suffix in {".png", ".jpg", ".jpeg", ".webp"}
