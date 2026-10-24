@@ -8,7 +8,7 @@ import { UploadDrawer } from '../components/UploadDrawer';
 import { CitationModal } from '../components/CitationModal';
 import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
 import { getMockInvestigation } from '../lib/mockInvestigation';
-import { Sparkles, FileText, Globe, Image as ImageIcon, Mic, Database, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Plus, MessageSquare, Settings, PanelLeftClose, PanelLeft, Sparkles, FolderSync } from 'lucide-react';
 
 const INITIAL_FILES: IngestedFile[] = [
   {
@@ -64,6 +64,14 @@ export default function Home() {
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
   const [ingestedFiles, setIngestedFiles] = useState<IngestedFile[]>(INITIAL_FILES);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+
+  const pastConversations = [
+    'Payment Failure Root Cause v2.4.0',
+    'Error Code PAY-401 Occurrences',
+    'Redis Cache vs In-Memory Architecture',
+    'Blameless Outage Audit & Attribution'
+  ];
 
   const handleSendMessage = async (query: string, attachedFiles?: string[]) => {
     const userMsgId = `user-${Date.now()}`;
@@ -81,7 +89,6 @@ export default function Home() {
     const startTime = Date.now();
     const mockData = getMockInvestigation(query);
 
-    // Try live FastAPI backend first, fallback gracefully to ground-truth simulation
     let finalReport = mockData.report;
     let finalSteps = mockData.steps;
 
@@ -99,16 +106,15 @@ export default function Home() {
         }
       }
     } catch {
-      // Backend not running locally yet; using client-side grounded mock
+      // Graceful local fallback
     }
 
-    // Thinking effect simulation (step progression)
     setTimeout(() => {
       const durationMs = Date.now() - startTime;
       const assistantMessage: ChatMessageType = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: finalReport.likely_root_cause || (finalReport.is_abstention ? finalReport.abstention_reason || '' : 'Investigation concluded.'),
+        content: finalReport.likely_root_cause || (finalReport.is_abstention ? finalReport.abstention_reason || '' : 'Investigation completed.'),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         thinkingSteps: finalSteps,
         thinkingDurationMs: Math.max(1600, durationMs),
@@ -117,7 +123,7 @@ export default function Home() {
 
       setMessages((prev) => [...prev, assistantMessage]);
       setIsInvestigating(false);
-    }, 1800);
+    }, 1500);
   };
 
   const handleResetChat = () => {
@@ -138,178 +144,189 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f4f6fa] text-slate-800">
-      {/* App Header */}
-      <Header
-        onOpenUpload={() => setIsUploadOpen(true)}
-        onResetChat={handleResetChat}
-        ingestedFileCount={ingestedFiles.length}
-      />
-
-      {/* Main Content Stream */}
-      <main className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-6 flex flex-col justify-between">
-        {messages.length === 0 ? (
-          /* Welcome & Exploration State */
-          <div className="my-auto py-8 animate-in fade-in duration-300">
-            {/* Hero Card */}
-            <div className="clay-card p-6 md:p-8 bg-white text-center max-w-2xl mx-auto border border-white/80">
-              <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-indigo-500 to-indigo-400 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-300/40 text-2xl font-bold mb-4">
-                🔍
+    <div className="min-h-screen flex bg-white text-slate-800">
+      {/* Gemini-Style Collapsible Sidebar */}
+      {isSidebarOpen && (
+        <aside className="w-64 border-r border-slate-100 bg-[#f9fafb] p-3 flex flex-col justify-between shrink-0 hidden md:flex transition-all">
+          <div>
+            {/* Top Gemini Brand & Toggle */}
+            <div className="flex items-center justify-between px-2 py-1 mb-4">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <span className="font-semibold text-sm text-slate-800">TraceIQ</span>
               </div>
-              <h2 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
-                Evidence-Grounded Incident Investigator
-              </h2>
-              <p className="text-xs md:text-sm text-slate-500 mt-2 leading-relaxed max-w-lg mx-auto">
-                Reconstruct software failures by connecting <strong>architecture docs, release notes, Grafana graphs, transcripts, and microservice logs</strong> into a cited root-cause timeline.
-              </p>
-
-              {/* 5 Source Badges */}
-              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
-                <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200/60">
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Documents</span>
-                </span>
-                <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-cyan-50 text-cyan-700 text-xs font-semibold border border-cyan-200/60">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>Webpages</span>
-                </span>
-                <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-semibold border border-violet-200/60">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>Images</span>
-                </span>
-                <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200/60">
-                  <Mic className="w-3.5 h-3.5" />
-                  <span>Transcripts</span>
-                </span>
-                <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/60">
-                  <Database className="w-3.5 h-3.5" />
-                  <span>Structured Logs</span>
-                </span>
-              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/50"
+                title="Collapse sidebar"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Hackathon Judge Benchmark Test Cards */}
-            <div className="mt-8">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider text-center mb-3">
-                Try Hackathon Evaluation Benchmarks
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
+            {/* New Chat Button */}
+            <button
+              onClick={handleResetChat}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-full bg-slate-200/60 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors mb-5"
+            >
+              <Plus className="w-4 h-4 text-slate-600" />
+              <span>New investigation</span>
+            </button>
+
+            {/* Recent Chats Section */}
+            <div className="px-2">
+              <span className="text-[11px] font-medium text-slate-400 block mb-2">Recent</span>
+              <div className="space-y-1">
+                {pastConversations.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSendMessage(item)}
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-200/50 text-xs text-slate-700 truncate block transition-colors font-normal"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* User Profile Footer (matching Gemini screenshot) */}
+          <div className="border-t border-slate-200/60 pt-3 px-2 flex items-center justify-between">
+            <div className="flex items-center space-x-2 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                T
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800 truncate">Tanishq</p>
+                <p className="text-[10px] text-slate-400">Pro</p>
+              </div>
+            </div>
+            <button className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Main Investigation Canvas */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Minimal Header */}
+        <div className="flex items-center">
+          {!isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 ml-3 text-slate-400 hover:text-slate-600 rounded-lg hidden md:block"
+              title="Expand sidebar"
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
+          <div className="flex-1">
+            <Header
+              onOpenUpload={() => setIsUploadOpen(true)}
+              onResetChat={handleResetChat}
+              ingestedFileCount={ingestedFiles.length}
+            />
+          </div>
+        </div>
+
+        {/* Chat / Content Canvas */}
+        <main className="flex-1 max-w-3xl w-full mx-auto px-4 md:px-6 pt-6 flex flex-col justify-between">
+          {messages.length === 0 ? (
+            /* Gemini Welcome Screen */
+            <div className="my-auto py-10 max-w-xl mx-auto text-center space-y-3">
+              <h2 className="text-2xl md:text-3xl font-semibold text-slate-800 tracking-tight">
+                Investigate with Evidence
+              </h2>
+              <p className="text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
+                Connect documents, changelogs, images, meeting transcripts, and structured logs into cited incident findings.
+              </p>
+
+              {/* Minimal Starter Prompt Chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-6 text-left">
                 <button
-                  onClick={() => handleSendMessage('Why did payment failures begin after yesterday\'s deployment?')}
-                  className="clay-card-sm p-4 text-left hover:border-indigo-300 transition-all group bg-white"
+                  onClick={() => handleSendMessage("Why did payment failures begin after yesterday's deployment?")}
+                  className="p-3 rounded-xl border border-slate-200/80 hover:bg-slate-50 transition-colors text-xs text-slate-700"
                 >
-                  <div className="flex items-center justify-between text-xs font-bold text-indigo-700 mb-1">
-                    <span>Test 1: Cross-Source Reasoning</span>
-                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <p className="text-xs font-medium text-slate-700">
-                    "Why did payment failures begin after yesterday's deployment?"
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Connects logs, release notes v2.4.0, Grafana spike, and transcript.
-                  </p>
+                  <span className="font-semibold block text-slate-900 mb-0.5">Why did payments fail?</span>
+                  <span className="text-slate-400 text-[11px]">Connects logs, v2.4.0 notes, and transcript.</span>
                 </button>
 
                 <button
                   onClick={() => handleSendMessage('Find every occurrence of error code PAY-401 and compare the affected versions.')}
-                  className="clay-card-sm p-4 text-left hover:border-emerald-300 transition-all group bg-white"
+                  className="p-3 rounded-xl border border-slate-200/80 hover:bg-slate-50 transition-colors text-xs text-slate-700"
                 >
-                  <div className="flex items-center justify-between text-xs font-bold text-emerald-700 mb-1">
-                    <span>Test 2: Exact Technical Lookup</span>
-                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <p className="text-xs font-medium text-slate-700">
-                    "Find every occurrence of error code PAY-401 and compare versions."
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Exact keyword full-text matching with version partitioning.
-                  </p>
+                  <span className="font-semibold block text-slate-900 mb-0.5">Error PAY-401 occurrences</span>
+                  <span className="text-slate-400 text-[11px]">Exact keyword search across versions.</span>
                 </button>
 
                 <button
                   onClick={() => handleSendMessage('The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?')}
-                  className="clay-card-sm p-4 text-left hover:border-amber-300 transition-all group bg-white"
+                  className="p-3 rounded-xl border border-slate-200/80 hover:bg-slate-50 transition-colors text-xs text-slate-700"
                 >
-                  <div className="flex items-center justify-between text-xs font-bold text-amber-700 mb-1">
-                    <span>Test 3: Conflicting Evidence</span>
-                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <p className="text-xs font-medium text-slate-700">
-                    "Runbook says Redis, but diagram shows in-memory cache."
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Detects architectural contradiction and inspects timestamps.
-                  </p>
+                  <span className="font-semibold block text-slate-900 mb-0.5">Redis vs In-Memory cache</span>
+                  <span className="text-slate-400 text-[11px]">Detects contradictory documentation.</span>
                 </button>
 
                 <button
                   onClick={() => handleSendMessage('Which engineer secretly caused the outage, and what exact line of code did they change?')}
-                  className="clay-card-sm p-4 text-left hover:border-rose-300 transition-all group bg-white"
+                  className="p-3 rounded-xl border border-slate-200/80 hover:bg-slate-50 transition-colors text-xs text-slate-700"
                 >
-                  <div className="flex items-center justify-between text-xs font-bold text-rose-700 mb-1">
-                    <span>Test 4: Evidence Abstention</span>
-                    <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <p className="text-xs font-medium text-slate-700">
-                    "Which engineer secretly caused the outage and what line of code?"
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Refuses to speculate; highlights missing Git blame and audit evidence.
-                  </p>
+                  <span className="font-semibold block text-slate-900 mb-0.5">Outage code blame audit</span>
+                  <span className="text-slate-400 text-[11px]">Tests evidence-based abstention.</span>
                 </button>
               </div>
             </div>
-          </div>
-        ) : (
-          /* Active Chat Stream */
-          <div className="space-y-4 pb-20">
-            {messages.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                message={msg}
-                onInspectCitation={(citation) => setSelectedCitation(citation)}
-              />
-            ))}
+          ) : (
+            /* Stream of Messages */
+            <div className="space-y-4 pb-16">
+              {messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  onInspectCitation={(citation) => setSelectedCitation(citation)}
+                />
+              ))}
 
-            {/* Live Streaming Placeholder */}
-            {isInvestigating && (
-              <ChatMessage
-                message={{
-                  id: 'streaming-temp',
-                  role: 'assistant',
-                  content: '',
-                  timestamp: 'Just now'
-                }}
-                isStreaming={true}
-                onInspectCitation={() => {}}
-              />
-            )}
-          </div>
-        )}
-      </main>
+              {isInvestigating && (
+                <ChatMessage
+                  message={{
+                    id: 'streaming-temp',
+                    role: 'assistant',
+                    content: '',
+                    timestamp: 'Just now'
+                  }}
+                  isStreaming={true}
+                  onInspectCitation={() => {}}
+                />
+              )}
+            </div>
+          )}
+        </main>
 
-      {/* Floating Claymorphic Prompt Input */}
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        isLoading={isInvestigating}
-        onOpenUpload={() => setIsUploadOpen(true)}
-      />
+        {/* Gemini Pill Input Bar */}
+        <ChatInput
+          onSendMessage={handleSendMessage}
+          isLoading={isInvestigating}
+          onOpenUpload={() => setIsUploadOpen(true)}
+        />
 
-      {/* Multi-Source File Upload & Evidence Drawer */}
-      <UploadDrawer
-        isOpen={isUploadOpen}
-        onClose={() => setIsUploadOpen(false)}
-        files={ingestedFiles}
-        onAddFiles={handleAddFiles}
-        onRemoveFile={handleRemoveFile}
-        onLoadSyntheticPack={handleLoadSyntheticPack}
-      />
+        {/* Upload & Evidence Drawer */}
+        <UploadDrawer
+          isOpen={isUploadOpen}
+          onClose={() => setIsUploadOpen(false)}
+          files={ingestedFiles}
+          onAddFiles={handleAddFiles}
+          onRemoveFile={handleRemoveFile}
+          onLoadSyntheticPack={handleLoadSyntheticPack}
+        />
 
-      {/* Citation Detail Inspector Modal */}
-      <CitationModal
-        citation={selectedCitation}
-        onClose={() => setSelectedCitation(null)}
-      />
+        {/* Citation Detail Inspector */}
+        <CitationModal
+          citation={selectedCitation}
+          onClose={() => setSelectedCitation(null)}
+        />
+      </div>
     </div>
   );
 }

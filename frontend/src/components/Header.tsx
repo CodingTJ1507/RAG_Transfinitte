@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ShieldCheck, Database, FolderUp, RotateCcw, Sparkles } from 'lucide-react';
+import { Database, FolderUp, RotateCcw, ChevronDown, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   onOpenUpload: () => void;
@@ -11,52 +11,42 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenUpload, onResetChat, ingestedFileCount }) => {
   return (
-    <header className="sticky top-0 z-20 backdrop-blur-md bg-[#f4f6fa]/85 border-b border-white/60 px-4 md:px-8 py-3.5 flex items-center justify-between transition-all">
-      {/* Brand Identity */}
-      <div className="flex items-center space-x-3.5">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-400 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-bold text-lg">
-          🔍
-        </div>
-        <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-lg font-bold tracking-tight text-slate-800">TraceIQ</h1>
-            <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-xs">
-              Evidence Investigator
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 font-medium">Multimodal RAG with Grounded Citations</p>
+    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-xs border-b border-slate-100 px-4 md:px-6 py-2.5 flex items-center justify-between">
+      {/* Brand & Model Selector (Gemini style) */}
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg transition-colors">
+          <span className="font-semibold text-slate-800 text-base">TraceIQ</span>
+          <span className="text-xs text-slate-400 font-medium flex items-center">
+            <span>Evidence RAG</span>
+            <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-slate-400" />
+          </span>
         </div>
       </div>
 
-      {/* Action Controls */}
-      <div className="flex items-center space-x-2.5">
-        {/* MongoDB Connection Status Indicator */}
-        <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full clay-card-sm text-xs font-medium text-slate-600">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <Database className="w-3.5 h-3.5 text-slate-500" />
-          <span>MongoDB Atlas: Connected</span>
+      {/* Right Actions */}
+      <div className="flex items-center space-x-2">
+        {/* Atlas status dot */}
+        <div className="hidden sm:flex items-center space-x-1.5 text-xs text-slate-500 font-medium px-2 py-1">
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Atlas Connected</span>
         </div>
 
-        {/* Upload / Evidence Drawer Toggle */}
+        {/* Evidence Pack pill */}
         <button
           onClick={onOpenUpload}
-          className="clay-btn px-3.5 py-1.5 flex items-center space-x-2 text-xs font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
-          title="Upload or Inspect Evidence"
+          className="flex items-center space-x-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-colors font-medium"
         >
-          <FolderUp className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Evidence Pack</span>
-          <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-[11px] font-bold text-slate-600">
-            {ingestedFileCount}
-          </span>
+          <FolderUp className="w-3.5 h-3.5 text-slate-500" />
+          <span>Evidence ({ingestedFileCount})</span>
         </button>
 
-        {/* Reset Chat */}
+        {/* Reset */}
         <button
           onClick={onResetChat}
-          className="clay-btn p-2 text-slate-500 hover:text-slate-800 transition-colors"
-          title="Reset Investigation"
+          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+          title="New Investigation"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-4 h-4" />
         </button>
       </div>
     </header>

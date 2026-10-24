@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Sparkles, CornerDownLeft, ShieldCheck, Search, Scale, FileQuestion } from 'lucide-react';
+import { ArrowUp, Plus, Mic } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (query: string, attachedFiles?: string[]) => void;
@@ -18,29 +18,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const testScenarios = [
+  const quickScenarios = [
     {
-      id: 'test-1',
-      label: '1️⃣ Root Cause',
-      icon: <Search className="w-3 h-3 text-indigo-500" />,
-      query: 'Why did payment failures begin after yesterday\'s deployment?'
+      label: 'Payment failure root cause',
+      query: "Why did payment failures begin after yesterday's deployment?"
     },
     {
-      id: 'test-2',
-      label: '2️⃣ Exact Code (PAY-401)',
-      icon: <Sparkles className="w-3 h-3 text-emerald-500" />,
+      label: 'Find error code PAY-401',
       query: 'Find every occurrence of error code PAY-401 and compare the affected versions.'
     },
     {
-      id: 'test-3',
-      label: '3️⃣ Cache Conflict',
-      icon: <Scale className="w-3 h-3 text-amber-500" />,
+      label: 'Redis vs In-memory conflict',
       query: 'The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?'
     },
     {
-      id: 'test-4',
-      label: '4️⃣ Abstention Check',
-      icon: <FileQuestion className="w-3 h-3 text-rose-500" />,
+      label: 'Outage code blame audit',
       query: 'Which engineer secretly caused the outage, and what exact line of code did they change?'
     }
   ];
@@ -48,7 +40,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
   }, [input]);
 
@@ -71,81 +63,74 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="sticky bottom-0 z-10 p-4 md:p-6 bg-gradient-to-t from-[#f4f6fa] via-[#f4f6fa]/95 to-transparent">
-      <div className="max-w-4xl mx-auto space-y-3">
-        {/* Quick Demo Test Pills */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-1 text-xs no-scrollbar">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 pl-1">
-            Judge Tests:
-          </span>
-          {testScenarios.map((scenario) => (
+    <div className="sticky bottom-0 z-10 p-3 md:p-5 bg-gradient-to-t from-white via-white/95 to-transparent">
+      <div className="max-w-3xl mx-auto space-y-2.5">
+        {/* Minimal Chips for Tests */}
+        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          {quickScenarios.map((scenario, idx) => (
             <button
-              key={scenario.id}
+              key={idx}
               onClick={() => onSendMessage(scenario.query)}
               disabled={isLoading}
-              className="clay-btn px-3 py-1.5 flex items-center space-x-1.5 shrink-0 text-slate-700 hover:text-indigo-600 transition-all font-medium text-xs disabled:opacity-50"
+              className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition-colors shrink-0 disabled:opacity-50 font-normal"
             >
-              {scenario.icon}
-              <span>{scenario.label}</span>
+              {scenario.label}
             </button>
           ))}
         </div>
 
-        {/* Floating Claymorphic Input Bar */}
-        <div className="clay-card p-2 md:p-3 bg-white border border-white/80 transition-shadow">
-          {attachedFiles.length > 0 && (
-            <div className="px-3 pt-1 pb-2 flex flex-wrap gap-1.5">
-              {attachedFiles.map((f, i) => (
-                <span key={i} className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/50 flex items-center space-x-1">
-                  <span>📎 {f}</span>
-                  <button onClick={() => setAttachedFiles(attachedFiles.filter((_, idx) => idx !== i))} className="hover:text-rose-600 ml-1">×</button>
-                </span>
-              ))}
-            </div>
-          )}
+        {/* Gemini-Style Rounded Capsule Input */}
+        <div className="gemini-input-pill flex items-center px-3 py-2 border border-slate-200/60 shadow-xs">
+          {/* Plus / Attach Evidence Button */}
+          <button
+            type="button"
+            onClick={onOpenUpload}
+            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors shrink-0"
+            title="Add evidence files"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
 
-          <div className="flex items-end space-x-2">
-            {/* Attachment Button */}
+          {/* Text Area */}
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask TraceIQ..."
+            rows={1}
+            disabled={isLoading}
+            className="flex-1 bg-transparent border-0 resize-none outline-hidden px-2.5 py-1 text-sm text-slate-800 placeholder-slate-400 font-normal max-h-32 leading-relaxed"
+          />
+
+          {/* Right Action Icons */}
+          <div className="flex items-center space-x-1 shrink-0">
             <button
               type="button"
-              onClick={onOpenUpload}
-              className="clay-btn p-2.5 text-slate-500 hover:text-indigo-600 transition-colors shrink-0"
-              title="Attach or upload evidence file"
+              className="p-2 text-slate-400 hover:text-slate-600 rounded-full transition-colors"
+              title="Voice query"
             >
-              <Paperclip className="w-4 h-4" />
+              <Mic className="w-4 h-4" />
             </button>
 
-            {/* Auto-growing Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask an investigation query (e.g., 'Why did payment failures spike after 10:02 AM?')..."
-              rows={1}
-              disabled={isLoading}
-              className="flex-1 bg-transparent border-0 resize-none outline-hidden py-2 px-1 text-sm text-slate-800 placeholder-slate-400 leading-relaxed font-normal max-h-36"
-            />
-
-            {/* Send Button */}
+            {/* Circular Send Arrow */}
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={!input.trim() || isLoading}
-              className={`p-2.5 rounded-full shrink-0 transition-all ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                 input.trim() && !isLoading
-                  ? 'clay-btn-primary cursor-pointer'
-                  : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                  ? 'bg-slate-900 text-white hover:bg-slate-800'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
-              title="Send investigation request"
             >
-              <Send className="w-4 h-4" />
+              <ArrowUp className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <p className="text-[11px] text-center text-slate-400 font-medium">
-          TraceIQ cross-checks documents, release notes, Grafana graphs, transcripts, and microservice logs with evidence citations.
+        <p className="text-[11px] text-center text-slate-400 font-normal">
+          TraceIQ is evidence-grounded and cites all verified sources.
         </p>
       </div>
     </div>

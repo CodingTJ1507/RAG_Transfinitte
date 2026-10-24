@@ -1,109 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6fa;
-  --foreground: #1e293b;
-  --card-bg: #ffffff;
-  --clay-shadow-dark: rgba(160, 174, 196, 0.35);
-  --clay-shadow-light: rgba(255, 255, 255, 0.95);
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --sidebar-bg: #f9fafb;
+  --border-color: #e5e7eb;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
 }
 
-/* Claymorphic Outer 3D Card */
-.clay-card {
-  background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 8px 8px 20px var(--clay-shadow-dark), -8px -8px 20px var(--clay-shadow-light);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-}
-
-/* Small Claymorphic Card */
-.clay-card-sm {
-  background: #ffffff;
-  border-radius: 14px;
-  box-shadow: 5px 5px 14px var(--clay-shadow-dark), -5px -5px 14px var(--clay-shadow-light);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-}
-
-/* Inset / Recessed Clay Element (for search inputs, active states) */
-.clay-inset {
-  background: #eef2f7;
-  border-radius: 16px;
-  box-shadow: inset 3px 3px 7px rgba(160, 174, 196, 0.4), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-/* Tactile Claymorphic Pill Button */
-.clay-btn {
-  background: #ffffff;
+/* Gemini-style sleek pill input */
+.gemini-input-pill {
+  background: #f0f4f9;
   border-radius: 9999px;
-  box-shadow: 4px 4px 12px var(--clay-shadow-dark), -4px -4px 12px var(--clay-shadow-light);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
 }
 
-.clay-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 6px 6px 16px var(--clay-shadow-dark), -6px -6px 16px var(--clay-shadow-light);
+.gemini-input-pill:focus-within {
+  background: #ffffff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.clay-btn:active {
-  transform: translateY(1px);
-  box-shadow: inset 2px 2px 5px rgba(160, 174, 196, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.95);
-}
-
-/* Primary Indigo Clay Button */
-.clay-btn-primary {
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-  color: #ffffff;
+/* Gemini-style subtle source badge */
+.gemini-source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
   border-radius: 9999px;
-  box-shadow: 4px 4px 14px rgba(79, 70, 229, 0.35), -3px -3px 10px rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background-color: #e2e8f0;
+  color: #475569;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+  margin: 0 3px;
+  cursor: pointer;
+  user-select: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.clay-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 6px 6px 18px rgba(79, 70, 229, 0.45), -4px -4px 12px rgba(255, 255, 255, 1);
+.gemini-source-badge:hover {
+  background-color: #cbd5e1;
+  color: #1e293b;
 }
 
-.clay-btn-primary:active {
-  transform: translateY(1px);
-  box-shadow: inset 2px 2px 6px rgba(49, 46, 129, 0.5), inset -2px -2px 6px rgba(255, 255, 255, 0.2);
-}
-
-/* Subtle Shimmer for Thinking State */
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.65; transform: scale(0.98); }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s infinite ease-in-out;
-}
-
-/* Custom Clean Scrollbar */
+/* Minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 9999px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d1d5db;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9ca3af;
 }

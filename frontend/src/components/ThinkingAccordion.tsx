@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sparkles, ChevronDown, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { ThinkingStep } from '../lib/types';
 
 interface ThinkingAccordionProps {
@@ -16,55 +16,33 @@ export const ThinkingAccordion: React.FC<ThinkingAccordionProps> = ({
   isStreaming = false,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(isStreaming);
-
   const seconds = (durationMs / 1000).toFixed(1);
 
   return (
-    <div className="mb-3.5">
+    <div className="mb-3 text-xs">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="clay-card-sm px-3.5 py-2 flex items-center justify-between w-full text-left text-xs font-semibold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer group"
+        className="inline-flex items-center space-x-1.5 text-slate-500 hover:text-slate-800 transition-colors py-1 cursor-pointer font-medium"
       >
-        <div className="flex items-center space-x-2">
-          {isStreaming ? (
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
-            </span>
-          ) : (
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500 transition-transform group-hover:rotate-12" />
-          )}
-
-          <span className="font-medium text-slate-600">
-            {isStreaming ? 'Investigating multi-source evidence...' : `Investigated for ${seconds}s`}
-          </span>
-        </div>
-
-        <div className="flex items-center space-x-1.5 text-slate-400 group-hover:text-slate-600 text-[11px]">
-          <span>{isOpen ? 'Hide reasoning' : 'Show steps'}</span>
-          {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        </div>
+        {isStreaming ? (
+          <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-1"></span>
+        ) : null}
+        <span>{isStreaming ? 'Thinking...' : `Thinking Process (${seconds}s)`}</span>
+        {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
       </button>
 
       {isOpen && (
-        <div className="mt-2 pl-3.5 pr-2 py-2 border-l-2 border-indigo-200 space-y-2.5 text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="mt-1.5 pl-3 border-l border-slate-200 space-y-1.5 text-xs text-slate-600">
           {steps.length > 0 ? (
             steps.map((step, idx) => (
-              <div key={idx} className="flex items-start space-x-2.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-700">{step.step}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">{step.timestamp}</span>
-                  </div>
-                  <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">{step.detail}</p>
-                </div>
+              <div key={idx} className="flex items-baseline space-x-2">
+                <span className="text-[10px] text-slate-400 font-mono shrink-0">{step.timestamp}</span>
+                <span className="font-medium text-slate-700">{step.step}:</span>
+                <span className="text-slate-500 text-[11px]">{step.detail}</span>
               </div>
             ))
           ) : (
-            <div className="text-slate-400 text-[11px] italic">
-              {isStreaming ? 'Querying vector index and parsing structured logs...' : 'Reasoning synthesized.'}
-            </div>
+            <div className="text-slate-400 italic">Searching knowledge sources and analyzing logs...</div>
           )}
         </div>
       )}
