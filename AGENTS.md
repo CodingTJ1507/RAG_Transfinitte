@@ -25,7 +25,9 @@ Traditional RAG tools fail because they only parse single documents, strip away 
 - Reconstructs a chronological incident timeline.
 - Detects conflicting documentation (e.g. Redis vs in-memory cache).
 - Performs **Evidence-Based Abstention** on ungrounded or speculative requests.
-- Presents results in a light, tactile **Claymorphic chat console** with ChatGPT-style thinking transparency.
+- Presents results in a calm, warm, Gemini-style chat console with transparent reasoning steps.
+
+> **Start here:** [`docs/TraceIQ_PRD.pdf`](docs/TraceIQ_PRD.pdf) is the current product and build plan (v2). Where this file disagrees with the PRD or the code, the PRD and the code win.
 
 ---
 
@@ -138,24 +140,10 @@ pip install -r requirements.txt
 # Create a .env file inside the `backend/` folder:
 ```
 
-#### `backend/.env` Schema:
-```ini
-# MongoDB Atlas Connection
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DATABASE=traceiq_db
-MONGODB_VECTOR_INDEX=traceiq_vector_index
-
-# LLM & Embedding Model API Keys
-OPENAI_API_KEY=your-openai-api-key-here
-LLM_MODEL=gpt-4o
-EMBEDDING_MODEL=text-embedding-3-small
-
-# Server Settings
-HOST=0.0.0.0
-PORT=8000
-ENVIRONMENT=development
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-```
+#### `backend/.env`
+Copy [`backend/.env.example`](backend/.env.example) to `backend/.env` and set `MONGODB_URI` and
+`GEMINI_API_KEY`. The app uses Gemini (`gemini-2.5-flash`, `gemini-embedding-001` at 768
+dimensions). Every setting is described in the README.
 
 ```bash
 # 5. Start the FastAPI backend
@@ -181,48 +169,28 @@ npm run dev
 
 ## 🗄️ 4. MongoDB Atlas Vector Search Index Configuration
 
-In MongoDB Atlas, create a Search Index on the `chunks` collection:
-- **Database**: `traceiq_db`
-- **Collection**: `chunks`
-- **Index Name**: `traceiq_vector_index`
-- **Index Definition (JSON)**:
-```json
-{
-  "fields": [
-    {
-      "type": "vector",
-      "path": "embedding",
-      "numDimensions": 1536,
-      "similarity": "cosine"
-    },
-    {
-      "type": "filter",
-      "path": "source_type"
-    },
-    {
-      "type": "filter",
-      "path": "service"
-    },
-    {
-      "type": "filter",
-      "path": "version"
-    }
-  ]
-}
-```
+Both indexes live on the `chunks` collection and are defined in
+[`backend/scripts/vector_search_index.json`](backend/scripts/vector_search_index.json) (768 dims, cosine)
+and [`backend/scripts/atlas_search_index.json`](backend/scripts/atlas_search_index.json) (BM25).
+Create them from `backend/` with `python -m scripts.manage_vector_index --create`.
 
 ---
 
 ## 🧪 5. The 4 Judge Evaluation Benchmarks
 
-All AI agents and contributors must ensure that the pipeline satisfies the ground-truth benchmarks in [`backend/tests/ground_truth.json`](backend/tests/ground_truth.json):
+The test set is the 20 questions in
+[`backend/synthetic_data/evaluation/questions.json`](backend/synthetic_data/evaluation/questions.json)
+with expected sources in `expected_sources.json` (run `GET /api/eval/benchmark`). The four demo questions:
 
-| Test ID | Category | Query | Ground-Truth Expectation |
+| ID | Category | Query | Expectation |
 | :--- | :--- | :--- | :--- |
-| **`TEST-01-CROSS-SOURCE`** | Cross-Source Reasoning | *"Why did payment failures begin after yesterday's deployment?"* | Must connect deployment time (10:02 AM), log errors (10:07 AM), release notes v2.4.0 (breaking `idempotency_key`), API spec mismatch, and transcript remarks with clickable citations for every claim. |
-| **`TEST-02-EXACT-LOOKUP`** | Exact Keyword Search | *"Find every occurrence of error code PAY-401 and compare the affected versions."* | Must use exact text matching to identify 48 matches in version 2.4.0 and 0 matches in version 2.3.9 without hallucinating similar codes. |
-| **`TEST-03-CONFLICTING-EVIDENCE`** | Contradiction Reasoning | *"The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?"* | Must identify direct contradiction between Runbook v1.8 and Diagram v2.2, inspect date metadata, and flag the ambiguity rather than guessing. |
-| **`TEST-04-UNANSWERABLE`** | Evidence-Based Abstention | *"Which engineer secretly caused the outage, and what exact line of code did they change?"* | Must decline to speculate on personal intent or blame. Explicitly state that logs/specs lack commit blame records and specify needed audit logs. |
+| **Q05** | Cross-source | *"Why did payment requests start failing after the latest deployment? Reconstruct the timeline, identify the most likely cause, explain the evidence, and recommend the next diagnostic step."* | Timeline 10:02 deploy to 10:05:12 first PAY-401; legacy `card_token` rejected after schemaguard 3.0; cause marked as inference; cites logs, request records, release notes, schemaguard notes, spec, handover. |
+| **Q06** | Exact lookup | *"Is PAY-401 an authentication error?"* | No: the spec maps PAY-401 to HTTP 422 validation failure; logs and screenshot show 422. |
+| **Q15** | Conflicting evidence | *"The initial report blames a credential problem. Is that still the best explanation?"* | No: the 10:18 report was early; no key rotation since 2026-10-09; status 422 means validation. |
+| **Q17** | Unanswerable | *"Which person approved the payment-service 2.4.0 production deploy?"* | Abstain: there is no approval record; must not name anyone. |
+
+The full product and build plan, including the junior task cards, is
+[`docs/TraceIQ_PRD.pdf`](docs/TraceIQ_PRD.pdf).
 
 ---
 
@@ -250,7 +218,7 @@ When contributing code or documentation to this repository, **strictly adhere to
 - If the retrieved evidence is empty or does not support the premise, the system **must invoke abstention** (`is_abstention: true`) rather than generating plausible fiction.
 
 ### 🎨 Rule 4: Frontend Theme Integrity
-- The frontend uses a **light, tactile Claymorphic aesthetic** (soft 3D pillowy shadows, inset input fields, clean notes/paper tone).
+- The frontend uses a **calm, warm, Gemini-style layout** (alabaster and oatmeal tones, sidebar, pill input, muted citation badges). Keep it; do not redesign.
 - **Avoid**: dark sci-fi themes, loud neon glowing borders, or generic AI chat templates.
 - **Maintain**: the ChatGPT/DeepSeek-style collapsible `ThinkingAccordion`, clickable `CitationCard`s, and `CitationModal` inspector.
 

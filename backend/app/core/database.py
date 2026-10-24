@@ -11,6 +11,12 @@ from pymongo.database import Database
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+class SearchIndexNotReadyError(TimeoutError):
+    """Atlas search indexes did not become queryable in time."""
+
+
 _client: MongoClient[dict[str, Any]] | None = None
 _database: Database[dict[str, Any]] | None = None
 
@@ -120,7 +126,7 @@ def ensure_indexes(
             collection.create_search_index(definition)
 
     deadline = time.monotonic() + (
-        settings.REQUEST_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+        settings.SEARCH_INDEX_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
     )
     while True:
         existing = {
@@ -135,7 +141,7 @@ def ensure_indexes(
         ):
             return existing
         if time.monotonic() >= deadline:
-            raise TimeoutError(
+            raise SearchIndexNotReadyError(
                 f"Atlas search indexes did not become ready: {configured_names}"
             )
         time.sleep(1)

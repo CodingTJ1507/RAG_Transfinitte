@@ -1,6 +1,8 @@
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
+from app.core.database import SearchIndexNotReadyError
 from app.models.schemas import IngestionReport, SourceType
 from app.services.ingestion import (
     get_ingestion_run,
@@ -10,6 +12,13 @@ from app.services.ingestion import (
 )
 
 router = APIRouter()
+INDEXES_BUILDING = "Search indexes are still building. Try again in a minute."
+DEPENDENCY_TIMEOUT = "A database or AI request timed out. Try again."
+
+
+def _timeout_error(exc: TimeoutError) -> HTTPException:
+    detail = INDEXES_BUILDING if isinstance(exc, SearchIndexNotReadyError) else DEPENDENCY_TIMEOUT
+    return HTTPException(status_code=503, detail=detail)
 
 
 @router.post("/batch", response_model=IngestionReport)
@@ -18,6 +27,8 @@ def ingest_evidence_pack(incident_id: str | None = Query(default=None)) -> Inges
         return ingest_dataset(incident_id=incident_id)
     except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise _timeout_error(exc) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -32,7 +43,9 @@ async def upload_evidence_file(
     filename = file.filename or ""
     try:
         content = await file.read(settings.MAX_SOURCE_FILE_BYTES + 1)
-        report, source = ingest_uploaded_file(
+        # Parsing, embedding and index waits block; keep them off the event loop.
+        report, source = await run_in_threadpool(
+            ingest_uploaded_file,
             filename=filename,
             content=content,
             source_type=source_type,
@@ -53,6 +66,8 @@ async def upload_evidence_file(
         }
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except TimeoutError as exc:
+        raise _timeout_error(exc) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     finally:

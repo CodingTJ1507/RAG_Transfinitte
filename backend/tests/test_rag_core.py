@@ -19,6 +19,8 @@ from app.retrieval.vector_search import build_vector_filter
 from app.services.embeddings import embed_query, embed_texts
 from app.services.gemini import generate_json
 from app.main import app
+from app.config import Settings
+from app.core.database import SearchIndexNotReadyError
 
 
 class DatasetContractTests(unittest.TestCase):
@@ -79,6 +81,13 @@ class DatasetContractTests(unittest.TestCase):
                 "file_path": document_path.name,
             })
             self.assertEqual(parsed_docx.units[1]["locator"]["section"], "Operations")
+
+    def test_vtt_voice_tags_become_speakers(self):
+        root, manifest = load_manifest(Path(__file__).resolve().parents[1] / "synthetic_data")
+        entry = next(source for source in manifest["sources"] if source["source_id"] == "TRN-002")
+        cue = next(unit for unit in parse_source(root, entry).units if unit["locator"]["cue_id"] == "cue-004")
+        self.assertEqual(cue["metadata"]["speaker"], "Arjun Rao")
+        self.assertTrue(cue["text"].startswith("Also, the HTTP status on these errors is 422"))
 
 
 class ChunkingTests(unittest.TestCase):
@@ -330,6 +339,36 @@ class ApiContractTests(unittest.TestCase):
                 data={"source_type": "document"},
             )
         self.assertEqual(response.status_code, 400)
+
+    def test_index_timeout_setting_must_be_finite(self):
+        for value in ("nan", "inf"):
+            with self.assertRaises(ValueError):
+                Settings(SEARCH_INDEX_TIMEOUT_SECONDS=value)
+
+    def test_other_timeouts_are_not_reported_as_index_builds(self):
+        with patch("app.api.routes_ingest.ingest_dataset", side_effect=TimeoutError("socket")):
+            with TestClient(app) as client:
+                response = client.post("/api/ingest/batch")
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn("still building", response.json()["detail"])
+
+    def test_ingest_while_search_indexes_build_returns_503(self):
+        with patch("app.api.routes_ingest.ingest_dataset", side_effect=SearchIndexNotReadyError("building")):
+            with TestClient(app) as client:
+                response = client.post("/api/ingest/batch")
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("still building", response.json()["detail"])
+
+    def test_upload_while_search_indexes_build_returns_503(self):
+        with patch("app.api.routes_ingest.ingest_uploaded_file", side_effect=SearchIndexNotReadyError("building")):
+            with TestClient(app) as client:
+                response = client.post(
+                    "/api/ingest/upload",
+                    files={"file": ("notes.txt", b"STATUS\nMitigated.")},
+                    data={"source_type": "transcript"},
+                )
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("still building", response.json()["detail"])
 
 
 if __name__ == "__main__":

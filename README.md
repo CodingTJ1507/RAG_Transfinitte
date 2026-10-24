@@ -92,6 +92,7 @@ Edit `backend\.env` with real credentials. Keep `.env` private and untracked.
 | `RETRIEVAL_CANDIDATE_LIMIT`, `FINAL_EVIDENCE_LIMIT` | Candidate and final evidence limits |
 | `MAX_SOURCE_FILE_BYTES` | Maximum source file size accepted by ingestion |
 | `REQUEST_TIMEOUT_SECONDS` | Database/provider request timeout |
+| `SEARCH_INDEX_TIMEOUT_SECONDS` | How long to wait for Atlas search indexes to become queryable; default 90 (keep it under the UI's 120 s request timeout) |
 | `CORS_ORIGINS` | Comma-separated frontend origins |
 
 The vector dimensions are pinned with the embedding model. Changing model or
@@ -105,8 +106,12 @@ Create both the Vector Search and BM25 Atlas Search indexes on the chunks collec
 ```powershell
 cd backend
 .\.venv\Scripts\Activate.ps1
-python scripts\manage_vector_index.py --create
+python -m scripts.manage_vector_index --create
 ```
+
+Run it as a module (`-m`) from `backend`, so Python can find the `app` package. It waits
+up to `SEARCH_INDEX_TIMEOUT_SECONDS` (default 90) for both indexes to become queryable;
+if it times out, run it again.
 
 The vector and Atlas Search definitions are documented in
 [`backend/scripts/vector_search_index.json`](backend/scripts/vector_search_index.json)
