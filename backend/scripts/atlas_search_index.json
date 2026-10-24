@@ -26,7 +26,7 @@
           "type": "token"
         },
         "timestamp": {
-          "type": "string"
+          "type": "date"
         },
         "identifiers": {
           "type": "document",

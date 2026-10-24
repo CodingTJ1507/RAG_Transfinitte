@@ -82,7 +82,7 @@ def main() -> int:
                 "source_type": {"type": "token"},
                 "version": {"type": "token"},
                 "owner": {"type": "token"},
-                "timestamp": {"type": "string"},
+                "timestamp": {"type": "date"},
                 "identifiers": {"type": "document", "dynamic": True},
             },
         }

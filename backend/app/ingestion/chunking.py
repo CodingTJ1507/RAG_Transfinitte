@@ -1,13 +1,14 @@
 import hashlib
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import settings
+from app.retrieval.vector_search import _date_value
 
 
 def _split_text(text: str, size: int, overlap: int) -> list[tuple[str, int]]:
@@ -79,12 +80,14 @@ def chunk_evidence_units(
             chunk_id = str(uuid5(NAMESPACE_URL, chunk_identity))
             timestamp = locator.get("timestamp") or source.get("created_at")
             if source.get("source_type") == "transcript" and locator.get("start") and source.get("recording_start"):
-                recording_start = datetime.fromisoformat(source["recording_start"].replace("Z", "+00:00"))
+                recording_start = _date_value(source["recording_start"])
                 cue_time = locator["start"].replace(",", ".")
                 hours, minutes, seconds = cue_time.split(":")
-                timestamp = (recording_start + timedelta(
-                    hours=int(hours), minutes=int(minutes), seconds=float(seconds)
-                )).isoformat().replace("+00:00", "Z")
+                if recording_start:
+                    timestamp = recording_start + timedelta(
+                        hours=int(hours), minutes=int(minutes), seconds=float(seconds)
+                    )
+            timestamp = _date_value(timestamp)
             results.append({
                 "chunk_id": chunk_id,
                 "source_id": source_id,
