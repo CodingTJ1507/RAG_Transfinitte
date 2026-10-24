@@ -1,6 +1,7 @@
 import csv
 import hashlib
 import json
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +12,9 @@ import pymupdf
 from docx import Document
 
 from app.config import settings
+from app.services.gemini import describe_image
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ParsedSource:
@@ -540,12 +543,38 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
 
         with Image.open(path) as image:
             image.verify()
-        description = source.get("description", "")
+        manifest_description = source.get("description", "")
         units = []
-        unit = _text_unit(
-            f"{source.get('title', path.name)}. Image metadata description: {description}",
-            {"image": path.name, "analysis": "metadata_only", "ocr_analyzed": False},
-        )
+        reading = None
+        if settings.IMAGE_ANALYSIS_ENABLED:
+            mime_type = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+            }[suffix]
+            try:
+                reading = describe_image(path.read_bytes(), mime_type)
+            except RuntimeError:
+                logger.warning(
+                    "Gemini image reading failed for %s; falling back to metadata",
+                    path.name,
+                )
+        if reading is not None:
+            visible_text = reading["visible_text"]
+            title = source.get("title", path.name)
+            manifest_part = f" {manifest_description}." if manifest_description else ""
+            text = (
+                f"{title}.{manifest_part} Description: {reading['description']} "
+                f"Visible text: {' | '.join(visible_text)}"
+            )
+            locator = {"image": path.name, "analysis": "gemini_vision"}
+            unit = _text_unit(text, locator, visible_text=visible_text)
+        else:
+            unit = _text_unit(
+                f"{source.get('title', path.name)}. Image metadata description: {manifest_description}",
+                {"image": path.name, "analysis": "metadata_only", "ocr_analyzed": False},
+            )
         if unit:
             units.append(unit)
     else:
@@ -570,7 +599,11 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         "size_bytes": path.stat().st_size,
         "owner": owner,
         "analysis_status": (
-            "metadata_only"
+            (
+                "vision_analyzed"
+                if units and units[0]["locator"].get("analysis") == "gemini_vision"
+                else "metadata_only"
+            )
             if suffix in {".png", ".jpg", ".jpeg", ".webp"}
             else ("parsed" if units else "no_extractable_text")
         ),

@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     DATASET_DIR: str = ""
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     SERVICE_OWNERS: str = '{"payment-service": "Payments Team", "order-service": "Orders Team"}'
+    IMAGE_ANALYSIS_ENABLED: bool = True
 
     @field_validator("EMBEDDING_DIMENSIONS", "EMBEDDING_BATCH_SIZE", "CHUNK_SIZE",
                      "RETRIEVAL_CANDIDATE_LIMIT", "FINAL_EVIDENCE_LIMIT",
