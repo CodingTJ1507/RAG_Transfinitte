@@ -22,7 +22,7 @@ def build_vector_filter(filters: dict[str, Any] | None) -> dict[str, Any] | None
     if not filters:
         return None
     clauses: list[dict[str, Any]] = []
-    for key in ("incident_id", "version"):
+    for key in ("incident_id", "version", "owner"):
         if filters.get(key):
             clauses.append({key: {"$eq": filters[key]}})
     source_types = filters.get("source_types") or filters.get("source_type")
@@ -65,7 +65,9 @@ def citation_from_document(document: dict[str, Any], score: float | None = None)
     location = ", ".join(location_parts) or "Source-level evidence"
     metadata = {
         "incident_id": document.get("incident_id"),
+        "owner": document.get("owner"),
         "version": document.get("version"),
+        "content_hash": document.get("content_hash"),
         "timestamp": document.get("timestamp") or locator.get("timestamp"),
         "locator": locator,
         "services": document.get("metadata", {}).get("services", []),
@@ -106,7 +108,7 @@ def perform_vector_search(
                 "index": settings.MONGODB_VECTOR_INDEX,
                 "path": "embedding",
                 "queryVector": vector,
-                "numCandidates": max(top_k * 10, settings.RETRIEVAL_CANDIDATE_LIMIT),
+                "numCandidates": max(top_k * 15, settings.RETRIEVAL_CANDIDATE_LIMIT),
                 "limit": top_k,
                 **({"filter": build_vector_filter(filters)} if build_vector_filter(filters) else {}),
             }

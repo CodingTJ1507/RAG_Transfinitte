@@ -9,61 +9,67 @@ import { CitationModal } from '../components/CitationModal';
 import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
 import { Plus, Settings, PanelLeftClose, PanelLeft, Sparkles } from 'lucide-react';
 
-const INITIAL_FILES: IngestedFile[] = [
-  {
-    id: 'doc-1',
-    name: 'service_operations_runbook_v1.8.md',
-    source_type: 'document',
-    size: '14.2 KB',
-    uploadedAt: 'Today, 09:30 AM',
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
+
+interface SourceRecord {
+  source_id: string;
+  title: string;
+  source_type: IngestedFile['source_type'];
+  size_bytes?: number;
+  chunk_count?: number;
+  updated_at?: string;
+  created_at?: string;
+}
+
+interface SourceListResponse {
+  sources: SourceRecord[];
+}
+
+interface UploadResponse {
+  source: SourceRecord;
+}
+
+function mapSourceToFile(source: SourceRecord): IngestedFile {
+  const size = source.size_bytes ?? 0;
+  return {
+    id: source.source_id,
+    name: source.title,
+    source_type: source.source_type,
+    size: size ? `${(size / 1024).toFixed(1)} KB` : '—',
+    uploadedAt: formatIndexedAt(source.updated_at ?? source.created_at ?? 'Indexed'),
     status: 'indexed',
-    chunkCount: 18
-  },
-  {
-    id: 'web-1',
-    name: 'payment_gateway_v2.4.0_release_notes.html',
-    source_type: 'webpage',
-    size: '8.6 KB',
-    uploadedAt: 'Today, 09:32 AM',
-    status: 'indexed',
-    chunkCount: 12
-  },
-  {
-    id: 'img-1',
-    name: 'grafana_error_latency_spike_1011.png',
-    source_type: 'image',
-    size: '340 KB',
-    uploadedAt: 'Today, 10:12 AM',
-    status: 'indexed',
-    chunkCount: 4
-  },
-  {
-    id: 'trans-1',
-    name: 'incident_warroom_call_1014am.txt',
-    source_type: 'transcript',
-    size: '19.5 KB',
-    uploadedAt: 'Today, 10:20 AM',
-    status: 'indexed',
-    chunkCount: 22
-  },
-  {
-    id: 'log-1',
-    name: 'payment_service_production_logs.json',
-    source_type: 'structured_record',
-    size: '88.4 KB',
-    uploadedAt: 'Today, 10:25 AM',
-    status: 'indexed',
-    chunkCount: 64
-  }
-];
+    chunkCount: source.chunk_count ?? 0,
+  };
+}
+
+function sourceTypeForFile(file: File): IngestedFile['source_type'] {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  if (['html', 'htm'].includes(extension ?? '')) return 'webpage';
+  if (['png', 'jpg', 'jpeg', 'webp'].includes(extension ?? '')) return 'image';
+  if (['json', 'csv'].includes(extension ?? '')) return 'structured_record';
+  if (extension === 'vtt' || extension === 'txt') return 'transcript';
+  return 'document';
+}
+
+function formatIndexedAt(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+}
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isInvestigating, setIsInvestigating] = useState<boolean>(false);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
-  const [ingestedFiles, setIngestedFiles] = useState<IngestedFile[]>(INITIAL_FILES);
+  const [ingestedFiles, setIngestedFiles] = useState<IngestedFile[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [sourceTypeFilter, setSourceTypeFilter] = useState('');
+  const [versionFilter, setVersionFilter] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [timeStartFilter, setTimeStartFilter] = useState('');
+  const [timeEndFilter, setTimeEndFilter] = useState('');
 
   const pastConversations = [
     'Payment Failure Root Cause v2.4.0',
@@ -89,11 +95,19 @@ export default function Home() {
 
     // Connect to live FastAPI backend at http://localhost:8000
     try {
-      const response = await fetch('http://localhost:8000/api/investigate/', {
+      const response = await fetch(`${API_BASE_URL}/api/investigate/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(6000) // 6s timeout
+        body: JSON.stringify({
+          query,
+          incident_id: 'INC-2026-1042',
+          source_types: sourceTypeFilter ? [sourceTypeFilter] : undefined,
+          version: versionFilter || undefined,
+          owner: ownerFilter || undefined,
+          time_range_start: timeStartFilter ? new Date(timeStartFilter).toISOString() : undefined,
+          time_range_end: timeEndFilter ? new Date(timeEndFilter).toISOString() : undefined,
+        }),
+        signal: AbortSignal.timeout(120000)
       });
 
       if (response.ok) {
@@ -105,9 +119,21 @@ export default function Home() {
           content: liveReport.likely_root_cause || (liveReport.is_abstention ? liveReport.abstention_reason || '' : 'Investigation completed.'),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           thinkingSteps: [
-            { step: 'Atlas Vector Search', detail: 'Retrieved matching chunks from vector index.', timestamp: '0.4s' },
-            { step: 'Hybrid Reciprocal Rank Fusion', detail: 'Blended semantic embeddings with exact keyword matches.', timestamp: '0.8s' },
-            { step: 'Cross-Source Synthesis', detail: 'Compiled chronological timeline with grounded citations.', timestamp: '1.2s' }
+            {
+              step: 'Query planning',
+              detail: `${liveReport.retrieval_diagnostics?.query_variants?.length ?? 1} query variant(s) prepared.`,
+              timestamp: 'complete',
+            },
+            {
+              step: 'Atlas hybrid retrieval',
+              detail: 'Searched vector, BM25, and exact identifier indexes with the selected metadata filters.',
+              timestamp: 'complete',
+            },
+            {
+              step: 'Claim verification',
+              detail: `${liveReport.claims?.filter((claim: { verification_status?: string }) => claim.verification_status === 'verified').length ?? 0} claim(s) independently verified against cited evidence.`,
+              timestamp: `${durationMs} ms`,
+            },
           ],
           thinkingDurationMs: durationMs,
           report: liveReport,
@@ -183,16 +209,53 @@ export default function Home() {
     setMessages([]);
   };
 
-  const handleAddFiles = (newFiles: IngestedFile[]) => {
-    setIngestedFiles((prev) => [...newFiles, ...prev]);
+  const handleAddFiles = async (newFiles: File[]) => {
+    for (const file of newFiles) {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('source_type', sourceTypeForFile(file));
+      form.append('incident_id', 'INC-2026-1042');
+      const response = await fetch(`${API_BASE_URL}/api/ingest/upload`, {
+        method: 'POST',
+        body: form,
+        signal: AbortSignal.timeout(120000),
+      });
+      if (!response.ok) {
+        const message = response.status === 413
+          ? 'The file exceeds the server upload limit.'
+          : 'The backend could not index this file. Check the file format and service readiness.';
+        throw new Error(message);
+      }
+      const payload = await response.json() as UploadResponse;
+      const indexedFile = mapSourceToFile(payload.source);
+      setIngestedFiles((previous) => [
+        indexedFile,
+        ...previous.filter((existing) => existing.id !== indexedFile.id),
+      ]);
+    }
   };
 
   const handleRemoveFile = (id: string) => {
     setIngestedFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const handleLoadSyntheticPack = () => {
-    setIngestedFiles(INITIAL_FILES);
+  const handleLoadSyntheticPack = async () => {
+    const response = await fetch(`${API_BASE_URL}/api/ingest/batch?incident_id=INC-2026-1042`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(120000),
+    });
+    if (!response.ok) {
+      throw new Error('Could not index the demo evidence pack. Check backend, Gemini, and Atlas readiness.');
+    }
+    const sourcesResponse = await fetch(
+      `${API_BASE_URL}/api/ingest/sources?incident_id=INC-2026-1042`,
+      { signal: AbortSignal.timeout(30000) },
+    );
+    if (!sourcesResponse.ok) {
+      throw new Error('The evidence pack was indexed, but the source list could not be refreshed.');
+    }
+    const payload = await sourcesResponse.json() as SourceListResponse;
+    setIngestedFiles(payload.sources.map(mapSourceToFile));
     setIsUploadOpen(false);
   };
 
@@ -285,6 +348,62 @@ export default function Home() {
 
         {/* Chat Stream */}
         <main className="flex-1 max-w-3xl w-full mx-auto px-4 md:px-6 pt-6 flex flex-col justify-between">
+          <section
+            aria-label="Evidence filters"
+            className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-2 rounded-xl border border-[#ded9cf] bg-[#efebe4] p-3"
+          >
+            <label className="text-[10px] font-medium text-stone-500">
+              Source type
+              <select
+                value={sourceTypeFilter}
+                onChange={(event) => setSourceTypeFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+              >
+                <option value="">All types</option>
+                <option value="document">Documents</option>
+                <option value="webpage">Webpages</option>
+                <option value="image">Images</option>
+                <option value="transcript">Transcripts</option>
+                <option value="structured_record">Structured records</option>
+              </select>
+            </label>
+            <label className="text-[10px] font-medium text-stone-500">
+              Version
+              <input
+                value={versionFilter}
+                onChange={(event) => setVersionFilter(event.target.value)}
+                placeholder="Any version"
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+              />
+            </label>
+            <label className="text-[10px] font-medium text-stone-500">
+              Owner
+              <input
+                value={ownerFilter}
+                onChange={(event) => setOwnerFilter(event.target.value)}
+                placeholder="Any owner"
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+              />
+            </label>
+            <label className="text-[10px] font-medium text-stone-500">
+              From
+              <input
+                type="datetime-local"
+                value={timeStartFilter}
+                onChange={(event) => setTimeStartFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+              />
+            </label>
+            <label className="text-[10px] font-medium text-stone-500">
+              To
+              <input
+                type="datetime-local"
+                value={timeEndFilter}
+                onChange={(event) => setTimeEndFilter(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+              />
+            </label>
+          </section>
           {messages.length === 0 ? (
             /* Gemini Welcome Screen */
             <div className="my-auto py-10 max-w-xl mx-auto text-center space-y-3">

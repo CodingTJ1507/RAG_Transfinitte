@@ -1,72 +1,168 @@
 import logging
+import hashlib
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from pymongo import ReplaceOne
+from pymongo import UpdateOne
+from pymongo.errors import DuplicateKeyError
 
-from app.config import settings
-from app.core.database import get_collection, get_chunks_collection, get_sources_collection, initialize_indexes
+from app.config import BACKEND_ROOT, settings
+from app.core.database import (
+    ensure_indexes,
+    ensure_retrieval_indexes,
+    get_collection,
+    get_chunks_collection,
+    get_sources_collection,
+    initialize_indexes,
+)
 from app.ingestion.chunking import chunk_evidence_units
 from app.ingestion.parsers import load_manifest, parse_source
-from app.models.schemas import IngestionReport
+from app.models.schemas import IngestionReport, SourceType
 from app.services.embeddings import embed_texts
 
 logger = logging.getLogger(__name__)
+UPLOAD_ROOT = BACKEND_ROOT / "uploads"
+SUPPORTED_UPLOADS = {
+    ".pdf": SourceType.DOCUMENT,
+    ".docx": SourceType.DOCUMENT,
+    ".md": SourceType.DOCUMENT,
+    ".html": SourceType.WEBPAGE,
+    ".htm": SourceType.WEBPAGE,
+    ".vtt": SourceType.TRANSCRIPT,
+    ".txt": SourceType.TRANSCRIPT,
+    ".json": SourceType.STRUCTURED_RECORD,
+    ".csv": SourceType.STRUCTURED_RECORD,
+    ".png": SourceType.IMAGE,
+    ".jpg": SourceType.IMAGE,
+    ".jpeg": SourceType.IMAGE,
+    ".webp": SourceType.IMAGE,
+}
 
 
 def _stored_source_type(source_type: str) -> str:
     return "structured_record" if source_type == "structured" else source_type
 
 
-def ingest_dataset() -> IngestionReport:
-    root, manifest = load_manifest()
-    source_entries = manifest["sources"]
-    run_id = str(uuid4())
+def _index_source(root: Path, entry: dict[str, Any]) -> tuple[str, int, int]:
+    source_id = str(entry.get("source_id", ""))
+    parsed = parse_source(root, entry)
+    source = parsed.source
+    source["source_type"] = _stored_source_type(str(source["source_type"]))
     sources = get_sources_collection()
     chunks_collection = get_chunks_collection()
-    runs_collection = get_collection("ingestion_runs")
+
+    prepared = chunk_evidence_units(parsed.units, source)
+    if not prepared:
+        raise ValueError("Source contains no indexable evidence")
+    chunk_ids = [chunk["chunk_id"] for chunk in prepared]
+    existing_chunks = list(chunks_collection.find(
+        {"source_id": source_id, "chunk_id": {"$in": chunk_ids}},
+        {"_id": 0, "chunk_id": 1, "source_hash": 1},
+    ))
+    indexed_by_id = {chunk["chunk_id"]: chunk for chunk in existing_chunks}
+    if all(
+        indexed_by_id.get(chunk_id, {}).get("source_hash") == parsed.source_hash
+        for chunk_id in chunk_ids
+    ):
+        sources.update_one(
+            {"source_id": source_id},
+            {"$set": {
+                **source,
+                "ingestion_status": "indexed",
+                "chunk_count": len(prepared),
+            }},
+            upsert=True,
+        )
+        return "skipped", 0, 0
+
+    missing_chunks = [
+        chunk for chunk in prepared
+        if indexed_by_id.get(chunk["chunk_id"], {}).get("source_hash") != parsed.source_hash
+    ]
+    vectors = embed_texts([
+        f"title: {chunk['title']} | text: {chunk['text']}"
+        for chunk in missing_chunks
+    ])
+    updated_at = datetime.now(timezone.utc)
+    for chunk, vector in zip(missing_chunks, vectors, strict=True):
+        chunk["embedding"] = vector
+        chunk["source_type"] = _stored_source_type(chunk["source_type"])
+        chunk["updated_at"] = updated_at
+    operations = [
+        UpdateOne(
+            {"source_id": chunk["source_id"], "chunk_id": chunk["chunk_id"]},
+            {
+                "$set": chunk,
+                "$setOnInsert": {"created_at": updated_at},
+            },
+            upsert=True,
+        )
+        for chunk in missing_chunks
+    ]
+    try:
+        if operations:
+            chunks_collection.bulk_write(operations, ordered=True)
+    except DuplicateKeyError:
+        logger.info("Concurrent ingestion created chunks for source %s; retrying upserts", source_id)
+        chunks_collection.bulk_write([
+            UpdateOne(
+                {"source_id": chunk["source_id"], "chunk_id": chunk["chunk_id"]},
+                {"$set": chunk},
+                upsert=False,
+            )
+            for chunk in missing_chunks
+        ], ordered=True)
+
+    source["ingestion_status"] = "indexed"
+    source["chunk_count"] = len(prepared)
+    source["updated_at"] = updated_at
+    sources.replace_one({"source_id": source_id}, source, upsert=True)
+    chunks_collection.delete_many({
+        "source_id": source_id,
+        "chunk_id": {"$nin": chunk_ids},
+    })
+    return (
+        "updated" if indexed_by_id else "created",
+        len(missing_chunks),
+        len(missing_chunks) if source["source_type"] == "structured_record" else 0,
+    )
+
+
+def _record_run(report: IngestionReport) -> None:
+    get_collection("ingestion_runs").insert_one({
+        **report.model_dump(mode="json"),
+        "created_at": datetime.now(timezone.utc),
+    })
+
+
+def ingest_dataset(incident_id: str | None = None) -> IngestionReport:
+    root, manifest = load_manifest()
+    source_entries = [
+        entry for entry in manifest["sources"]
+        if incident_id is None or entry.get("incident_id", manifest.get("incident_id")) == incident_id
+    ]
+    if incident_id and not source_entries:
+        raise ValueError(f"No dataset sources found for incident '{incident_id}'")
+    run_id = str(uuid4())
     initialize_indexes()
+    ensure_retrieval_indexes()
 
     created = updated = skipped = processed = chunk_count = structured_count = 0
     failures: list[dict[str, str]] = []
     for entry in source_entries:
         source_id = str(entry.get("source_id", ""))
         try:
-            parsed = parse_source(root, entry)
-            source = parsed.source
-            source["source_type"] = _stored_source_type(str(source["source_type"]))
-            existing = sources.find_one({"source_id": source_id}, {"source_hash": 1})
-            if existing and existing.get("source_hash") == parsed.source_hash:
+            source_status, source_chunks, source_structured = _index_source(root, entry)
+            if source_status == "skipped":
                 skipped += 1
                 processed += 1
                 continue
-
-            prepared = chunk_evidence_units(parsed.units, source)
-            if not prepared:
-                raise ValueError("Source contains no indexable evidence")
-            vectors = embed_texts([chunk["text"] for chunk in prepared])
-            for chunk, vector in zip(prepared, vectors, strict=True):
-                chunk["embedding"] = vector
-                chunk["source_type"] = _stored_source_type(chunk["source_type"])
-                chunk["updated_at"] = datetime.now(timezone.utc)
-            chunks_collection.bulk_write([
-                ReplaceOne({"chunk_id": chunk["chunk_id"]}, chunk, upsert=True)
-                for chunk in prepared
-            ], ordered=True)
-
-            source["ingestion_status"] = "indexed"
-            source["chunk_count"] = len(prepared)
-            source["updated_at"] = datetime.now(timezone.utc)
-            sources.replace_one({"source_id": source_id}, source, upsert=True)
-            chunks_collection.delete_many({
-                "source_id": source_id,
-                "source_hash": {"$ne": parsed.source_hash},
-            })
             processed += 1
-            chunk_count += len(prepared)
-            structured_count += len(prepared) if source["source_type"] == "structured_record" else 0
-            if existing:
+            chunk_count += source_chunks
+            structured_count += source_structured
+            if source_status == "updated":
                 updated += 1
             else:
                 created += 1
@@ -87,11 +183,67 @@ def ingest_dataset() -> IngestionReport:
         chunks_created=chunk_count,
         structured_records_processed=structured_count,
     )
-    runs_collection.insert_one({
-        **report.model_dump(mode="json"),
-        "created_at": datetime.now(timezone.utc),
-    })
+    _record_run(report)
     return report
+
+
+def ingest_uploaded_file(
+    filename: str,
+    content: bytes,
+    source_type: SourceType,
+    incident_id: str | None = None,
+    owner: str | None = None,
+) -> tuple[IngestionReport, dict[str, Any]]:
+    safe_name = Path(filename).name
+    suffix = Path(safe_name).suffix.lower()
+    if not safe_name or suffix not in SUPPORTED_UPLOADS:
+        raise ValueError(f"Unsupported uploaded file format: {suffix or 'unknown'}")
+    if not content:
+        raise ValueError("Uploaded file is empty")
+    if len(content) > settings.MAX_SOURCE_FILE_BYTES:
+        raise ValueError("Uploaded file exceeds MAX_SOURCE_FILE_BYTES")
+    if source_type != SUPPORTED_UPLOADS[suffix]:
+        raise ValueError(f"File format {suffix} is not compatible with source type {source_type.value}")
+
+    source_hash = hashlib.sha256(content).hexdigest()
+    UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    stored_path = UPLOAD_ROOT / f"{source_hash}{suffix}"
+    if not stored_path.exists():
+        stored_path.write_bytes(content)
+    source_identity = f"{incident_id or 'INC-USER-UPLOAD'}:{owner or ''}:{source_hash}"
+    source_id = f"UPL-{hashlib.sha256(source_identity.encode('utf-8')).hexdigest()[:24]}"
+    source_entry = {
+        "source_id": source_id,
+        "title": safe_name,
+        "source_type": "structured" if source_type == SourceType.STRUCTURED_RECORD else source_type.value,
+        "format": suffix.lstrip("."),
+        "file_path": stored_path.name,
+        "sha256": source_hash,
+        "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "incident_id": incident_id or "INC-USER-UPLOAD",
+        "owner": owner,
+        "services": [],
+        "tags": ["user-upload"],
+        "synthetic": False,
+    }
+    initialize_indexes()
+    ensure_retrieval_indexes()
+    run_id = str(uuid4())
+    source_status, chunk_count, structured_count = _index_source(UPLOAD_ROOT, source_entry)
+    report = IngestionReport(
+        run_id=run_id,
+        status="completed",
+        discovered_sources=1,
+        processed_sources=1,
+        created_sources=int(source_status == "created"),
+        updated_sources=int(source_status == "updated"),
+        skipped_sources=int(source_status == "skipped"),
+        chunks_created=chunk_count,
+        structured_records_processed=structured_count,
+    )
+    _record_run(report)
+    source_record = get_sources_collection().find_one({"source_id": source_id}, {"_id": 0}) or {}
+    return report, source_record
 
 
 def list_sources(incident_id: str | None = None) -> list[dict[str, Any]]:

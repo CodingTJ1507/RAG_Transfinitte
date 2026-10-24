@@ -25,16 +25,16 @@ class Settings(BaseSettings):
     MONGODB_SOURCE_COLLECTION: str = "sources"
     MONGODB_CHUNK_COLLECTION: str = "chunks"
     MONGODB_VECTOR_INDEX: str = "traceiq_vector_index"
+    MONGODB_SEARCH_INDEX: str = "traceiq_search_index"
 
-    LLM_PROVIDER: str = "openai"
-    OPENAI_API_KEY: str = ""
-    LLM_MODEL: str = "gpt-4o-mini"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
-    EMBEDDING_DIMENSIONS: int = 1536
+    GEMINI_API_KEY: str = ""
+    LLM_MODEL: str = "gemini-2.5-flash"
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
+    EMBEDDING_DIMENSIONS: int = 768
     EMBEDDING_BATCH_SIZE: int = 64
 
-    CHUNK_SIZE: int = 1000
-    CHUNK_OVERLAP: int = 120
+    CHUNK_SIZE: int = 500
+    CHUNK_OVERLAP: int = 60
     RETRIEVAL_CANDIDATE_LIMIT: int = 30
     FINAL_EVIDENCE_LIMIT: int = 10
     REQUEST_TIMEOUT_SECONDS: float = 30.0

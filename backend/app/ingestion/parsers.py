@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from bs4 import BeautifulSoup
-from pypdf import PdfReader
+import pymupdf
+from docx import Document
 
 from app.config import settings
 
@@ -66,10 +67,56 @@ def _text_unit(text: str, locator: dict[str, Any], **metadata: Any) -> dict[str,
 
 def _parse_pdf(path: Path) -> list[dict[str, Any]]:
     units: list[dict[str, Any]] = []
-    reader = PdfReader(str(path))
-    for page_number, page in enumerate(reader.pages, start=1):
-        text = page.extract_text() or ""
-        unit = _text_unit(text, {"page": page_number})
+    with pymupdf.open(path) as document:
+        for page_number, page in enumerate(document, start=1):
+            unit = _text_unit(page.get_text("text"), {"page": page_number})
+            if unit:
+                units.append(unit)
+    return units
+
+
+def _parse_docx(path: Path) -> list[dict[str, Any]]:
+    document = Document(path)
+    units: list[dict[str, Any]] = []
+    section = "Document"
+    for paragraph_number, paragraph in enumerate(document.paragraphs, start=1):
+        text = paragraph.text.strip()
+        if not text:
+            continue
+        if paragraph.style.name.startswith("Heading"):
+            section = text
+        unit = _text_unit(
+            text,
+            {"section": section, "paragraph": paragraph_number},
+        )
+        if unit:
+            units.append(unit)
+    for table_number, table in enumerate(document.tables, start=1):
+        for row_number, row in enumerate(table.rows, start=1):
+            values = [cell.text.strip() for cell in row.cells]
+            unit = _text_unit(
+                " | ".join(value for value in values if value),
+                {"section": f"Table {table_number}", "row": row_number},
+            )
+            if unit:
+                units.append(unit)
+    return units
+
+
+def _parse_markdown(path: Path) -> list[dict[str, Any]]:
+    units: list[dict[str, Any]] = []
+    section = "Document"
+    for line_number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        clean = line.strip()
+        if not clean:
+            continue
+        heading = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", clean)
+        if heading:
+            section = heading.group(1).strip()
+            content = section
+        else:
+            content = clean
+        unit = _text_unit(content, {"section": section, "line": line_number})
         if unit:
             units.append(unit)
     return units
@@ -220,7 +267,11 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         units = _parse_html(path)
     elif suffix == ".vtt":
         units = _parse_vtt(path)
-    elif suffix in {".txt", ".md"}:
+    elif suffix == ".md":
+        units = _parse_markdown(path)
+    elif suffix == ".docx":
+        units = _parse_docx(path)
+    elif suffix == ".txt":
         units = _parse_text(path)
     elif suffix == ".json":
         units = _parse_json(path)
@@ -246,6 +297,7 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         **source,
         "file_path": relative_path.replace("\\", "/"),
         "source_hash": source_hash,
+        "size_bytes": path.stat().st_size,
         "analysis_status": (
             "metadata_only"
             if suffix in {".png", ".jpg", ".jpeg", ".webp"}

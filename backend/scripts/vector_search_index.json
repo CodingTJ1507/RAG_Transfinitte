@@ -6,7 +6,7 @@
       {
         "type": "vector",
         "path": "embedding",
-        "numDimensions": 1536,
+        "numDimensions": 768,
         "similarity": "cosine"
       },
       {
@@ -24,6 +24,10 @@
       {
         "type": "filter",
         "path": "timestamp"
+      },
+      {
+        "type": "filter",
+        "path": "owner"
       }
     ]
   }

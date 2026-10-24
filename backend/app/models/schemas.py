@@ -27,6 +27,7 @@ class Citation(BaseModel):
 class InvestigationRequest(BaseModel):
     query: str = Field(min_length=3, max_length=4000)
     incident_id: str | None = None
+    owner: str | None = None
     source_types: list[SourceType] | None = None
     time_range_start: datetime | None = None
     time_range_end: datetime | None = None
@@ -60,6 +61,10 @@ class SupportedClaim(BaseModel):
     classification: str = Field(pattern="^(confirmed|inference|unknown)$")
     citation_chunk_ids: list[str] = Field(default_factory=list)
     explanation: str | None = None
+    verification_status: str = Field(
+        default="not_checked",
+        pattern="^(verified|contradicted|insufficient|not_checked)$",
+    )
 
 
 class InvestigationReport(BaseModel):
@@ -103,11 +108,14 @@ class EvaluationCaseResult(BaseModel):
     expected_source_ids: list[str]
     retrieved_source_ids: list[str]
     recall_at_k: float
+    precision_at_k: float
+    ndcg_at_k: float
     reciprocal_rank: float
     hit: bool
     abstention_expected: bool
     abstained: bool | None = None
     citations_valid: bool | None = None
+    faithfulness: float | None = None
     answer_evaluated: bool = False
     passed: bool
     failure_reasons: list[str] = Field(default_factory=list)

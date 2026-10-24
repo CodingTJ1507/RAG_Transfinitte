@@ -2,12 +2,21 @@ export type SourceType = 'document' | 'webpage' | 'image' | 'transcript' | 'stru
 
 export interface Citation {
   source_id: string;
+  chunk_id?: string;
   source_type: SourceType;
   title: string;
   location: string; // e.g. "Page 3", "Timestamp 10:14", "Line 42"
   snippet: string;
-  confidence: number;
+  retrieval_score?: number;
   metadata?: Record<string, unknown>;
+}
+
+export interface SupportedClaim {
+  claim: string;
+  classification: 'confirmed' | 'inference' | 'unknown';
+  citation_chunk_ids: string[];
+  explanation?: string;
+  verification_status: 'verified' | 'contradicted' | 'insufficient' | 'not_checked';
 }
 
 export interface TimelineEvent {
@@ -15,12 +24,16 @@ export interface TimelineEvent {
   event: string;
   source_type: SourceType;
   source_id: string;
+  chunk_id?: string;
+  classification?: string;
   severity?: 'info' | 'warning' | 'critical';
 }
 
 export interface InvestigationReport {
   query: string;
+  answer: string;
   timeline: TimelineEvent[];
+  claims: SupportedClaim[];
   likely_root_cause?: string;
   confidence_score: number;
   is_abstention: boolean;
