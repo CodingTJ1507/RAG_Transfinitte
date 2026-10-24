@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TraceIQ | Incident Investigation",
-  description: "Evidence-grounded engineering incident investigation.",
+  title: "Concord.ai | Incident Investigation",
+  description: "Evidence-grounded engineering incident investigation powered by Concord.ai.",
+  icons: {
+    icon: "/concord-mark.svg",
+    shortcut: "/concord-mark.svg",
+    apple: "/concord-mark.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

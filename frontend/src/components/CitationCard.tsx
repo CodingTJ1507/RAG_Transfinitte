@@ -61,21 +61,21 @@ export const CompactCitationPill: React.FC<CompactCitationPillProps> = ({ citati
     <button
       type="button"
       onClick={() => onInspect(citation)}
-      className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#eae5dc] hover:bg-[#ded9ce] text-stone-700 text-xs transition-colors cursor-pointer shrink-0 border border-stone-300/60 shadow-2xs"
+      className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#eaf0f6] hover:bg-[#dce6f0] text-[#162748] text-xs transition-colors cursor-pointer shrink-0 border border-[#d4dee8] hover:border-[#09bec1]/40 shadow-2xs"
       title={citation.snippet}
     >
-      <span className="font-mono text-[10px] font-semibold text-stone-600 bg-[#f7f5f0] px-1 py-0.2 rounded border border-stone-300/70">
+      <span className="font-mono text-[10px] font-semibold text-[#087f82] bg-[#09bec1]/10 px-1 py-0.2 rounded border border-[#09bec1]/25">
         {label}
       </span>
       <span className="font-medium text-xs truncate max-w-[150px]">
         {citation.title}
       </span>
-      <span className="text-[10px] text-stone-500 font-mono">
+      <span className="text-[10px] text-slate-500 font-mono">
         {citation.location}
       </span>
     </button>
   );
 };
 
-export const getSourceBadge = () => 'bg-[#eae5dc] text-stone-700 border-stone-300';
+export const getSourceBadge = () => 'bg-[#eaf0f6] text-[#162748] border-[#d4dee8]';
 export const getSourceIcon = () => null;

@@ -25,12 +25,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   if (isUser) {
     return (
       <div className="flex justify-end mb-6">
-        <div className="max-w-[85%] md:max-w-[70%] bg-[#eae5dc] border border-stone-300/40 rounded-3xl px-5 py-3 text-stone-800 text-sm leading-relaxed font-normal shadow-2xs">
+        <div className="max-w-[85%] md:max-w-[70%] bg-[#eaf0f6] border border-[#d4dee8] rounded-3xl px-5 py-3 text-[#162748] text-sm leading-relaxed font-normal shadow-2xs">
           {message.content}
           {message.attachedFiles && message.attachedFiles.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-stone-300/60 flex flex-wrap gap-1.5">
+            <div className="mt-2 pt-2 border-t border-[#d4dee8] flex flex-wrap gap-1.5">
               {message.attachedFiles.map((file, idx) => (
-                <span key={idx} className="text-[11px] px-2 py-0.5 rounded-full bg-[#f7f5f0] text-stone-600 font-mono border border-stone-300/70">
+                <span key={idx} className="text-[11px] px-2 py-0.5 rounded-full bg-[#f8fafc] text-[#087f82] font-mono border border-[#09bec1]/30">
                   {file}
                 </span>
               ))}
@@ -47,16 +47,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       <div className="flex justify-start mb-8">
         <div className="w-full max-w-3xl space-y-3">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-full bg-[#e3ded5] flex items-center justify-center shrink-0">
-              <AlertCircle className="w-3.5 h-3.5 text-stone-600" />
+            <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
             </div>
-            <span className="text-xs font-semibold text-stone-800">
+            <span className="text-xs font-semibold text-[#162748]">
               {message.errorTitle || 'Something Went Wrong'}
             </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#efebe4] border border-[#ded9cf] text-stone-700 text-xs leading-relaxed space-y-3 shadow-2xs">
-            <p className="text-xs text-stone-700">
+          <div className="p-4 rounded-2xl bg-[#eef2f6] border border-[#dde4ec] text-[#162748] text-xs leading-relaxed space-y-3 shadow-2xs">
+            <p className="text-xs text-slate-700">
               {message.content || 'An unexpected error occurred while processing your request. Please try again.'}
             </p>
 
@@ -64,9 +64,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <div className="pt-1">
                 <button
                   onClick={() => onRetry(message.rawQuery!)}
-                  className="px-3.5 py-1.5 bg-stone-800 hover:bg-stone-900 text-stone-50 text-xs font-medium rounded-lg flex items-center space-x-1.5 transition-colors cursor-pointer shadow-2xs"
+                  className="px-3.5 py-1.5 bg-[#162748] hover:bg-[#1f3660] text-white text-xs font-medium rounded-lg flex items-center space-x-1.5 transition-colors cursor-pointer shadow-2xs"
                 >
-                  <RefreshCw className="w-3 h-3" />
+                  <RefreshCw className="w-3 h-3 text-[#09bec1]" />
                   <span>Retry</span>
                 </button>
               </div>
@@ -90,14 +90,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   return (
     <div className="flex justify-start mb-8">
       <div className="w-full max-w-3xl space-y-4">
-        {/* Gemini Sparkle Indicator / Thinking */}
+        {/* Concord.ai Assistant Brand Header */}
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-500 via-indigo-500 to-amber-300 flex items-center justify-center p-0.5 shrink-0 shadow-2xs">
-            <div className="w-full h-full bg-[#f7f5f0] rounded-full flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-blue-600" />
-            </div>
+          <div className="w-6 h-6 rounded-lg bg-[#162748] flex items-center justify-center p-1 shrink-0 shadow-2xs border border-[#09bec1]/30">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/concord-mark.svg" alt="Concord.ai" className="w-4 h-4 object-contain" />
           </div>
-          <span className="text-xs font-semibold text-stone-800">TraceIQ</span>
+          <span className="text-xs font-bold text-[#162748]">Concord.ai</span>
+          <span className="text-[10px] text-slate-400 font-medium">Investigator</span>
         </div>
 
         {/* Minimal Thinking Process Accordion */}
@@ -111,12 +111,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
         {/* Test 4: Evidence-Based Abstention Box */}
         {report?.is_abstention && (
-          <div className="p-3.5 rounded-xl bg-[#efebe4] border border-[#ded9cf] text-stone-700 text-xs leading-relaxed space-y-1 shadow-2xs">
-            <div className="flex items-center space-x-1.5 font-semibold text-stone-900">
-              <ShieldAlert className="w-4 h-4 text-stone-600" />
+          <div className="p-3.5 rounded-xl bg-[#eef2f6] border border-[#dde4ec] text-[#162748] text-xs leading-relaxed space-y-1 shadow-2xs">
+            <div className="flex items-center space-x-1.5 font-semibold text-[#162748]">
+              <ShieldAlert className="w-4 h-4 text-[#09bec1]" />
               <span>Evidence-Based Abstention</span>
             </div>
-            <p className="text-stone-700">
+            <p className="text-slate-700">
               {report.abstention_reason}
             </p>
           </div>
