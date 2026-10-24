@@ -26,22 +26,38 @@ def get_gemini_client() -> genai.Client:
 
 
 def generate_json(system_instruction: str, payload: dict[str, Any]) -> dict[str, Any]:
-    try:
-        response = get_gemini_client().models.generate_content(
-            model=settings.LLM_MODEL,
-            contents=json.dumps(payload, ensure_ascii=False),
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0,
-                response_mime_type="application/json",
-            ),
-        )
-        if not response.text:
-            raise ValueError("Gemini returned an empty response")
-        result = json.loads(response.text)
-        if not isinstance(result, dict):
-            raise ValueError("Gemini response must be a JSON object")
-        return result
-    except Exception as exc:
-        logger.exception("Gemini JSON generation failed")
-        raise RuntimeError("Gemini generation failed; check API configuration and retry") from exc
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = get_gemini_client().models.generate_content(
+                model=settings.LLM_MODEL,
+                contents=json.dumps(payload, ensure_ascii=False),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0,
+                    response_mime_type="application/json",
+                ),
+            )
+            if not response.text:
+                raise ValueError("Gemini returned an empty response")
+            result = json.loads(response.text)
+            if not isinstance(result, dict):
+                raise ValueError("Gemini response must be a JSON object")
+            return result
+        except Exception as exc:
+            err_msg = str(exc)
+            if attempt < max_retries - 1 and (
+                "timed out" in err_msg.lower()
+                or "429" in err_msg
+                or "503" in err_msg
+                or "unavailable" in err_msg.lower()
+                or "high demand" in err_msg.lower()
+                or "resource_exhausted" in err_msg.lower()
+            ):
+                delay = 3 * (attempt + 1)
+                logger.warning("Gemini generation transient error (%s); waiting %ds before retry %d/%d...", err_msg[:80], delay, attempt + 1, max_retries)
+                time.sleep(delay)
+                continue
+            logger.exception("Gemini JSON generation failed")
+            raise RuntimeError("Gemini generation failed; check API configuration and retry") from exc

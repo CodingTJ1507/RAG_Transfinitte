@@ -25,7 +25,7 @@ class Citation(BaseModel):
 
 
 class InvestigationRequest(BaseModel):
-    query: str = Field(min_length=3, max_length=4000)
+    query: str = Field(min_length=1, max_length=4000)
     incident_id: str | None = None
     owner: str | None = None
     source_types: list[SourceType] | None = None

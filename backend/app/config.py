@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 60
     RETRIEVAL_CANDIDATE_LIMIT: int = 30
     FINAL_EVIDENCE_LIMIT: int = 10
-    REQUEST_TIMEOUT_SECONDS: float = 30.0
+    REQUEST_TIMEOUT_SECONDS: float = 60.0
     SEARCH_INDEX_TIMEOUT_SECONDS: float = 90.0  # below the frontend's 120 s request timeout
     MAX_SOURCE_FILE_BYTES: int = 25 * 1024 * 1024
     DATASET_DIR: str = ""
