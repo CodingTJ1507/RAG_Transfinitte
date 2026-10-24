@@ -37,12 +37,22 @@ def chunk_evidence_units(
 
     results: list[dict[str, Any]] = []
     source_id = source["source_id"]
+    service_owners = settings.service_owner_map
     for unit_index, unit in enumerate(units):
         text = re.sub(r"\s+", " ", str(unit.get("text", ""))).strip()
         if not text:
             continue
         unit_metadata = unit.get("metadata") or {}
         record = unit_metadata.get("record", {})
+        owner = source.get("owner")
+        if isinstance(record, dict):
+            record_service = record.get("service") or record.get("client_service")
+            if record_service:
+                owner = (
+                    service_owners.get(record_service, "Unassigned")
+                    if isinstance(record_service, str)
+                    else "Unassigned"
+                )
         identifiers: dict[str, list[str]] = {}
         identifier_fields = {
             "error_code", "request_id", "trace_id", "log_id", "event_id",
@@ -88,7 +98,7 @@ def chunk_evidence_units(
                 "start_index": start_index,
                 "locator": locator,
                 "incident_id": source.get("incident_id"),
-                "owner": source.get("owner"),
+                "owner": owner,
                 "version": source.get("version"),
                 "timestamp": timestamp,
                 "source_hash": source.get("source_hash"),

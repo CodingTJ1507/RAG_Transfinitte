@@ -551,11 +551,24 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
     else:
         raise ValueError(f"Unsupported source format: {suffix or 'unknown'}")
 
+    owner = source.get("owner")
+    if not isinstance(owner, str) or not owner.strip():
+        owner = None
+    if owner is None and suffix == ".pdf" and units:
+        cover_owner = units[0].get("metadata", {}).get("cover_owner")
+        if isinstance(cover_owner, str) and cover_owner.strip():
+            owner = cover_owner
+    if owner is None:
+        services = source.get("services") or []
+        service = services[0] if isinstance(services, list) and services else None
+        owner = settings.service_owner_map.get(service, "Unassigned") if service else "Unassigned"
+
     source_record = {
         **source,
         "file_path": relative_path.replace("\\", "/"),
         "source_hash": source_hash,
         "size_bytes": path.stat().st_size,
+        "owner": owner,
         "analysis_status": (
             "metadata_only"
             if suffix in {".png", ".jpg", ".jpeg", ".webp"}

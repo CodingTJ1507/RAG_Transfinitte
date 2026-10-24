@@ -94,6 +94,7 @@ Edit `backend\.env` with real credentials. Keep `.env` private and untracked.
 | `REQUEST_TIMEOUT_SECONDS` | Database/provider request timeout |
 | `SEARCH_INDEX_TIMEOUT_SECONDS` | How long to wait for Atlas search indexes to become queryable; default 90 (keep it under the UI's 120 s request timeout) |
 | `CORS_ORIGINS` | Comma-separated frontend origins |
+| `SERVICE_OWNERS` | JSON map from service names to their owning teams |
 
 The vector dimensions are pinned with the embedding model. Changing model or
 dimensions requires recreating the Atlas vector index and re-embedding all chunks;

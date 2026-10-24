@@ -2,6 +2,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
+from app.ingestion.chunking import chunk_evidence_units
 from app.ingestion.parsers import load_manifest, parse_source
 
 
@@ -126,3 +127,33 @@ class PdfSectionTests(unittest.TestCase):
             "order-service",
             " ".join(unit["text"] for unit in parse_demo("DOC-001").units),
         )
+
+
+class OwnerTests(unittest.TestCase):
+    def test_source_owners(self):
+        owners = {
+            source_id: parse_demo(source_id).source["owner"]
+            for source_id in ("DOC-001", "DOC-003", "DOC-005", "WEB-001")
+        }
+        self.assertEqual(
+            owners,
+            {
+                "DOC-001": "Platform Team",
+                "DOC-003": "SRE Team",
+                "DOC-005": "Payments Team",
+                "WEB-001": "Unassigned",
+            },
+        )
+
+    def test_record_chunks_use_their_own_service(self):
+        parsed = parse_demo("REC-001")
+        chunks = chunk_evidence_units(
+            parsed.units,
+            {**parsed.source, "source_type": "structured_record"},
+        )
+        by_log = {
+            chunk["locator"]["log_id"]: chunk["owner"]
+            for chunk in chunks
+        }
+        self.assertEqual(by_log["LOG-0001"], "Unassigned")
+        self.assertEqual(by_log["LOG-0002"], "Payments Team")
