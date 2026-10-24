@@ -46,6 +46,8 @@ export interface ChatMessage {
   thinkingDurationMs?: number;
   report?: InvestigationReport;
   attachedFiles?: string[];
+  isError?: boolean;
+  rawQuery?: string;
 }
 
 export interface IngestedFile {
