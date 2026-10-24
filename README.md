@@ -277,15 +277,6 @@ Open work is tracked as GitHub issues in the
 4. Open a PR using the template, with `Closes #N` or `Part of #N` and real test output.
 5. Never commit `.env`, keys or `backend/uploads/`.
 
-## Team
-
-| Name | GitHub | Area |
-| :--- | :--- | :--- |
-| Parth Patidar | [@parthpatidar03](https://github.com/parthpatidar03) | Architecture, review, release |
-| Srinikesh | [@Srinikesh14](https://github.com/Srinikesh14) | Data ingestion |
-| Tanishq | [@CodingTJ1507](https://github.com/CodingTJ1507) | Storage, API, reliability |
-| Aadil | [@saaadil](https://github.com/saaadil) | Search insight, benchmark UI |
-
 ## Limitations
 
 - Images are indexed by their manifest description until image understanding lands (#17).
