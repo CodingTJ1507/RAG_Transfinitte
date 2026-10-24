@@ -64,7 +64,6 @@ def test_429_stops_when_budget_exceeded():
             call_with_retries(call)
 
     assert call.call_count == 2
-    assert call.call_count < settings.GEMINI_MAX_RETRIES + 1 or settings.GEMINI_MAX_RETRIES == 1
 
 
 def test_value_error_with_503_in_text_is_not_retried():

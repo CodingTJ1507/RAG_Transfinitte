@@ -35,7 +35,7 @@ def embed_texts(texts: Sequence[str]) -> list[list[float]]:
             logger.exception("Gemini embedding request failed")
             raise RuntimeError("Gemini embedding request failed; check Gemini API configuration and retry") from exc
 
-        if response is None or not response.embeddings or len(response.embeddings) != len(batch):
+        if not response.embeddings or len(response.embeddings) != len(batch):
             raise RuntimeError("Gemini returned an incomplete embedding batch")
         for item in response.embeddings:
             vector = item.values or []
@@ -66,7 +66,7 @@ def embed_query(query: str) -> list[float]:
         logger.exception("Gemini query embedding failed")
         raise RuntimeError("Gemini query embedding failed; check Gemini API configuration and retry") from exc
 
-    if response is None or not response.embeddings or not response.embeddings[0].values:
+    if not response.embeddings or not response.embeddings[0].values:
         raise RuntimeError("Gemini returned no query embedding")
     vector = response.embeddings[0].values
     if len(vector) != settings.EMBEDDING_DIMENSIONS:
