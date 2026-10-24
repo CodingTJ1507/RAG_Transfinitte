@@ -122,27 +122,82 @@ def _parse_markdown(path: Path) -> list[dict[str, Any]]:
     return units
 
 
+def _html_text(element: Any) -> str:
+    if element.name == "table":
+        return " | ".join(
+            cell.get_text(" ", strip=True)
+            for cell in element.find_all(["th", "td"])
+        )
+    return element.get_text(" ", strip=True)
+
+
+def _slug(text: str) -> str:
+    return re.sub(r"\s+", "-", re.sub(r"[^a-z0-9 ]", "", text.lower()))
+
+
 def _parse_html(path: Path) -> list[dict[str, Any]]:
     soup = BeautifulSoup(path.read_text(encoding="utf-8", errors="replace"), "html.parser")
     for element in soup(["script", "style", "nav", "footer", "header", "noscript", "svg"]):
         element.decompose()
     main = soup.find("main") or soup.find("article") or soup.body or soup
+    elements = main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote", "table"])
+    page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
+    h1 = main.find("h1")
+    intro_section = h1.get_text(" ", strip=True) if h1 else page_title
+
+    h2_elements = [element for element in elements if element.name == "h2"]
+    if not h2_elements:
+        unit = _text_unit(
+            " ".join(_html_text(element) for element in elements),
+            {"section": intro_section or "Webpage content", "html_id": "intro"},
+        )
+        return [unit] if unit else []
+
+    groups: list[tuple[str, str, list[Any]]] = []
+    current_heading = ""
+    current_id = ""
+    current_elements: list[Any] = []
+
+    for element in elements:
+        if element.name == "h2":
+            if current_elements:
+                groups.append((current_heading, current_id, current_elements))
+            current_heading = _html_text(element)
+            current_id = element.get("id") or _slug(current_heading)
+            current_elements = [element]
+        elif current_elements:
+            current_elements.append(element)
+
+    if current_elements:
+        groups.append((current_heading, current_id, current_elements))
+
     units: list[dict[str, Any]] = []
-    heading = soup.title.get_text(" ", strip=True) if soup.title else ""
-    for element in main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote", "table"]):
-        if element.name in {"h1", "h2", "h3", "h4"}:
-            heading = element.get_text(" ", strip=True)
-            content = heading
-        elif element.name == "table":
-            content = " | ".join(cell.get_text(" ", strip=True) for cell in element.find_all(["th", "td"]))
-        else:
-            content = element.get_text(" ", strip=True)
-        unit = _text_unit(content, {
-            "section": heading or "Webpage content",
-            "html_id": element.get("id"),
-        })
+    for heading, html_id, group_elements in groups:
+        unit = _text_unit(
+            " ".join(_html_text(element) for element in group_elements),
+            {"section": heading or "Webpage content", "html_id": html_id},
+        )
         if unit:
             units.append(unit)
+
+    first_h2_index = next(
+        index for index, element in enumerate(elements)
+        if element is h2_elements[0]
+    )
+    intro_elements = elements[:first_h2_index]
+    intro_texts = [_html_text(element) for element in intro_elements]
+    intro_content = [
+        text for element, text in zip(intro_elements, intro_texts)
+        if element is not h1 and text
+    ]
+    if intro_content:
+        intro_unit = _text_unit(
+            " ".join(intro_texts),
+            {"section": intro_section or "Webpage content", "html_id": "intro"},
+        )
+        if intro_unit:
+            units.insert(0, intro_unit)
+
     return units
 
 
