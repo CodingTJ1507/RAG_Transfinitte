@@ -70,7 +70,7 @@ def citation_from_document(document: dict[str, Any], score: float | None = None)
         ("image", "Image"),
     ):
         value = locator.get(key)
-        if value is not None:
+        if value not in (None, ""):
             location_parts.append(f"{label} {value}")
     if locator.get("analysis") == "metadata_only":
         location_parts.append("Image description only; visual content not analyzed")

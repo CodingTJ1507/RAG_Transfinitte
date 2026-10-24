@@ -235,7 +235,11 @@ def _parse_html(path: Path) -> list[dict[str, Any]]:
     for element in soup(["script", "style", "nav", "footer", "header", "noscript", "svg"]):
         element.decompose()
     main = soup.find("main") or soup.find("article") or soup.body or soup
-    elements = main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote", "table"])
+    # A block inside another block (a p in an li) is already part of its parent's text.
+    elements = [
+        element for element in main.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote", "table"])
+        if not element.find_parent(["p", "li", "pre", "blockquote", "table"])
+    ]
     page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
     h1 = main.find("h1")
     intro_section = h1.get_text(" ", strip=True) if h1 else page_title
@@ -474,7 +478,7 @@ def _source_owner(source: dict[str, Any], suffix: str, units: list[dict[str, Any
     if isinstance(cover_owner, str) and cover_owner.strip():
         return cover_owner
     services = source.get("services") or []
-    if isinstance(services, list) and services:
+    if isinstance(services, list) and services and isinstance(services[0], str):
         return settings.service_owner_map.get(services[0], "Unassigned")
     return "Unassigned"
 

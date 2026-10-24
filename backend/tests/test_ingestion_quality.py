@@ -224,3 +224,43 @@ class TimestampTests(unittest.TestCase):
             "timestamp": datetime(2026, 10, 23, 10, 20, 52),
         })
         self.assertEqual(citation.metadata["timestamp"], "2026-10-23T10:20:52Z")
+
+
+class EdgeCaseTests(unittest.TestCase):
+    @staticmethod
+    def chunk(locator, source, record=None):
+        unit = {"text": "evidence", "locator": locator, "metadata": {"record": record} if record else {}}
+        return chunk_evidence_units([unit], {"source_id": "S-1", "source_type": "structured_record", **source})[0]
+
+    def test_non_string_service_is_unassigned(self):
+        chunk = self.chunk({"log_id": "L1"}, {"owner": "Payments Team"}, record={"service": ["payment-service"]})
+        self.assertEqual(chunk["owner"], "Unassigned")
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder) / "r.json").write_text('[{"log_id": "L1"}]', encoding="utf-8")
+            parsed = parse_source(Path(folder), {"source_id": "S-1", "file_path": "r.json",
+                                                 "source_type": "structured_record", "services": [["x"]]})
+        self.assertEqual(parsed.source["owner"], "Unassigned")
+
+    def test_unparsable_timestamp_falls_back_to_created_at(self):
+        chunk = self.chunk({"log_id": "L1", "timestamp": "not a date"}, {"created_at": "2026-10-23T09:00:00Z"})
+        self.assertEqual(chunk["timestamp"], datetime(2026, 10, 23, 9, 0, tzinfo=timezone.utc))
+
+    def test_vtt_cue_without_hours(self):
+        chunk = self.chunk({"cue_id": "c1", "start": "00:05.000"},
+                           {"source_type": "transcript", "recording_start": "2026-10-23T10:00:00Z"})
+        self.assertEqual(chunk["timestamp"], datetime(2026, 10, 23, 10, 0, 5, tzinfo=timezone.utc))
+
+    def test_empty_section_is_not_cited(self):
+        citation = citation_from_document({"source_id": "D-1", "source_type": "document",
+                                           "locator": {"page": 3, "section": ""}})
+        self.assertEqual(citation.location, "Page 3")
+
+    def test_nested_html_text_appears_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            (Path(folder) / "p.html").write_text(
+                '<main><h1>T</h1><h2 id="a">A</h2><ul><li><p>nested once</p></li></ul>'
+                "<blockquote><p>quoted</p></blockquote></main>", encoding="utf-8")
+            units = parse_source(Path(folder), {"source_id": "W-1", "file_path": "p.html",
+                                                "source_type": "webpage"}).units
+        text = next(unit["text"] for unit in units if unit["locator"]["html_id"] == "a")
+        self.assertEqual((text.count("nested once"), text.count("quoted")), (1, 1))

@@ -28,7 +28,21 @@ def _split_text(text: str, size: int, overlap: int) -> list[tuple[str, int]]:
 def _chunk_owner(record: Any, source_owner: str | None, service_owners: dict[str, str]) -> str | None:
     """A record belongs to its own service's team; any other unit to the source owner."""
     service = (record.get("service") or record.get("client_service")) if isinstance(record, dict) else None
-    return service_owners.get(service, "Unassigned") if service else source_owner
+    if not service:
+        return source_owner
+    return service_owners.get(service, "Unassigned") if isinstance(service, str) else "Unassigned"
+
+
+def _cue_offset(start: str) -> timedelta | None:
+    """WebVTT cue start, 'hh:mm:ss.ttt' or 'mm:ss.ttt', as an offset from the recording start."""
+    parts = start.replace(",", ".").split(":")
+    if not 2 <= len(parts) <= 3:
+        return None
+    hours, minutes, seconds = ["0"] * (3 - len(parts)) + parts
+    try:
+        return timedelta(hours=int(hours), minutes=int(minutes), seconds=float(seconds))
+    except ValueError:
+        return None
 
 
 def chunk_evidence_units(
@@ -78,16 +92,12 @@ def chunk_evidence_units(
                 f"{json.dumps(locator, sort_keys=True, default=str)}:{piece_index}:{content_hash}"
             )
             chunk_id = str(uuid5(NAMESPACE_URL, chunk_identity))
-            timestamp = locator.get("timestamp") or source.get("created_at")
-            if source.get("source_type") == "transcript" and locator.get("start") and source.get("recording_start"):
-                recording_start = _date_value(source["recording_start"])
-                cue_time = locator["start"].replace(",", ".")
-                hours, minutes, seconds = cue_time.split(":")
-                if recording_start:
-                    timestamp = recording_start + timedelta(
-                        hours=int(hours), minutes=int(minutes), seconds=float(seconds)
-                    )
-            timestamp = _date_value(timestamp)
+            timestamp = _date_value(locator.get("timestamp")) or _date_value(source.get("created_at"))
+            if source.get("source_type") == "transcript" and locator.get("start"):
+                recording_start = _date_value(source.get("recording_start"))
+                offset = _cue_offset(str(locator["start"]))
+                if recording_start and offset is not None:
+                    timestamp = recording_start + offset
             results.append({
                 "chunk_id": chunk_id,
                 "source_id": source_id,
