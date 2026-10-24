@@ -20,7 +20,7 @@ export const getSourceTypeLabel = (type: SourceType): string => {
 
 /**
  * Gemini-identical subtle inline source badge (e.g. JPG, LOG, DOC)
- * Matches the user's screenshot directly: small, muted gray, rounded pill.
+ * In calm warm stone tone
  */
 interface InlineCitationBadgeProps {
   citation: Citation;
@@ -61,21 +61,21 @@ export const CompactCitationPill: React.FC<CompactCitationPillProps> = ({ citati
     <button
       type="button"
       onClick={() => onInspect(citation)}
-      className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition-colors cursor-pointer shrink-0 border border-slate-200/50"
+      className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-[#eae5dc] hover:bg-[#ded9ce] text-stone-700 text-xs transition-colors cursor-pointer shrink-0 border border-stone-300/60 shadow-2xs"
       title={citation.snippet}
     >
-      <span className="font-mono text-[10px] font-semibold text-slate-500 bg-white px-1 py-0.2 rounded border border-slate-200">
+      <span className="font-mono text-[10px] font-semibold text-stone-600 bg-[#f7f5f0] px-1 py-0.2 rounded border border-stone-300/70">
         {label}
       </span>
       <span className="font-medium text-xs truncate max-w-[150px]">
         {citation.title}
       </span>
-      <span className="text-[10px] text-slate-400 font-mono">
+      <span className="text-[10px] text-stone-500 font-mono">
         {citation.location}
       </span>
     </button>
   );
 };
 
-export const getSourceBadge = () => 'bg-slate-100 text-slate-700 border-slate-200';
+export const getSourceBadge = () => 'bg-[#eae5dc] text-stone-700 border-stone-300';
 export const getSourceIcon = () => null;

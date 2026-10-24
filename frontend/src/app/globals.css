@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1f2937;
-  --sidebar-bg: #f9fafb;
-  --border-color: #e5e7eb;
+  --background: #f7f5f0;
+  --foreground: #262320;
+  --sidebar-bg: #efebe4;
+  --card-bg: #faf8f5;
+  --border-color: #ded9cf;
+  --input-bg: #eae5dc;
+  --badge-bg: #e4dfd5;
+  --badge-hover: #d9d3c7;
+  --badge-text: #4a453e;
 }
 
 body {
@@ -14,19 +19,21 @@ body {
   overflow-x: hidden;
 }
 
-/* Gemini-style sleek pill input */
+/* Warm tactile pill input */
 .gemini-input-pill {
-  background: #f0f4f9;
+  background: var(--input-bg);
   border-radius: 9999px;
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
 }
 
 .gemini-input-pill:focus-within {
-  background: #ffffff;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: #fdfcfb;
+  border-color: #cbcfb;
+  box-shadow: 0 2px 10px rgba(50, 40, 30, 0.08);
 }
 
-/* Gemini-style subtle source badge */
+/* Warm muted inline source badge */
 .gemini-source-badge {
   display: inline-flex;
   align-items: center;
@@ -35,8 +42,9 @@ body {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background-color: #e2e8f0;
-  color: #475569;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   transition: all 0.15s ease;
   vertical-align: middle;
   margin: 0 3px;
@@ -46,11 +54,11 @@ body {
 }
 
 .gemini-source-badge:hover {
-  background-color: #cbd5e1;
-  color: #1e293b;
+  background-color: var(--badge-hover);
+  color: #23201d;
 }
 
-/* Minimal scrollbar */
+/* Minimal warm scrollbar */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -61,10 +69,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #d4cec4;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #b8b1a4;
 }
