@@ -236,101 +236,76 @@ def _parse_vtt(path: Path) -> list[dict[str, Any]]:
     return units
 
 
-def _parse_text(path: Path) -> list[dict[str, Any]]:
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    title_index = next(
-        (index for index, line in enumerate(lines) if line.strip()),
-        None,
+TXT_HEADING_MAX_LENGTH = 40
+TXT_PART_MAX_CHARS = 2000
+
+
+def _is_text_heading(line: str) -> bool:
+    clean = line.strip()
+    return (
+        len(clean) < TXT_HEADING_MAX_LENGTH
+        and re.search(r"[A-Za-z]", clean) is not None
+        and clean.upper() == clean
     )
-    if title_index is None:
-        return []
 
-    content_lines = list(enumerate(lines[title_index + 1:], title_index + 2))
 
-    def is_heading(line: str) -> bool:
+def _text_paragraphs(lines: list[str]) -> list[tuple[int, str]]:
+    paragraphs: list[tuple[int, str]] = []
+    current: list[str] = []
+    start = 0
+    for line_number, line in enumerate(lines, start=1):
         clean = line.strip()
-        return (
-            len(clean) < 40
-            and re.search(r"[A-Za-z]", clean) is not None
-            and clean.upper() == clean
-        )
+        if clean:
+            if not current:
+                start = line_number
+            current.append(clean)
+        elif current:
+            paragraphs.append((start, " ".join(current)))
+            current = []
+    if current:
+        paragraphs.append((start, " ".join(current)))
+    return paragraphs
 
-    if not any(is_heading(line) for _, line in content_lines):
-        paragraphs: list[tuple[int, str]] = []
-        paragraph_lines: list[str] = []
-        paragraph_start = 0
-        for line_number, line in enumerate(lines, start=1):
-            clean = line.strip()
-            if clean:
-                if not paragraph_lines:
-                    paragraph_start = line_number
-                paragraph_lines.append(clean)
-            elif paragraph_lines:
-                paragraphs.append((paragraph_start, " ".join(paragraph_lines)))
-                paragraph_lines = []
-        if paragraph_lines:
-            paragraphs.append((paragraph_start, " ".join(paragraph_lines)))
 
-        units: list[dict[str, Any]] = []
-        part_number = 0
-        part_start: int | None = None
-        part_text = ""
+def _pack_parts(paragraphs: list[tuple[int, str]], limit: int = TXT_PART_MAX_CHARS) -> list[dict[str, Any]]:
+    parts: list[tuple[int, str]] = []
+    for line_number, paragraph in paragraphs:
+        if parts and len(parts[-1][1]) + 1 + len(paragraph) <= limit:
+            parts[-1] = (parts[-1][0], f"{parts[-1][1]} {paragraph}")
+        else:
+            parts.append((line_number, paragraph))
+    units = [
+        _text_unit(text, {"section": f"Part {number}", "line": start})
+        for number, (start, text) in enumerate(parts, start=1)
+    ]
+    return [unit for unit in units if unit]
 
-        def add_part() -> None:
-            nonlocal part_number, part_start, part_text
-            if not part_text or part_start is None:
-                return
-            part_number += 1
-            unit = _text_unit(
-                part_text,
-                {"section": f"Part {part_number}", "line": part_start},
-            )
-            if unit:
-                units.append(unit)
-            part_start = None
-            part_text = ""
 
-        for line_number, paragraph in paragraphs:
-            candidate = f"{part_text} {paragraph}".strip()
-            if part_text and len(candidate) > 2000:
-                add_part()
-                candidate = paragraph
-            if part_start is None:
-                part_start = line_number
-            part_text = candidate
-        add_part()
-        return units
-
-    units = []
-    section = "HEADER"
-    section_line: int | None = None
-    section_text: list[str] = []
-
-    def add_section() -> None:
-        if section_line is None:
-            return
-        unit = _text_unit(
-            " ".join(section_text),
-            {"section": section, "line": section_line},
-        )
-        if unit:
-            units.append(unit)
-
+def _text_sections(content_lines: list[tuple[int, str]]) -> list[dict[str, Any]]:
+    sections: list[tuple[str, int, list[str]]] = []
     for line_number, line in content_lines:
         clean = line.strip()
         if not clean:
             continue
-        if is_heading(clean):
-            add_section()
-            section = clean
-            section_line = line_number
-            section_text = [clean]
+        if _is_text_heading(clean):
+            sections.append((clean, line_number, [clean]))
+        elif sections:
+            sections[-1][2].append(clean)
         else:
-            if section_line is None:
-                section_line = line_number
-            section_text.append(clean)
-    add_section()
-    return units
+            sections.append(("HEADER", line_number, [clean]))
+    units = [_text_unit(" ".join(texts), {"section": name, "line": start}) for name, start, texts in sections]
+    return [unit for unit in units if unit]
+
+
+def _parse_text(path: Path) -> list[dict[str, Any]]:
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    title_index = next((index for index, line in enumerate(lines) if line.strip()), None)
+    if title_index is None:
+        return []
+    content_lines = list(enumerate(lines[title_index + 1:], title_index + 2))
+    if any(_is_text_heading(line) for _, line in content_lines):
+        return _text_sections(content_lines)
+    return _pack_parts(_text_paragraphs(lines))
 
 
 def _structured_records(value: Any) -> list[tuple[str, dict[str, Any]]]:
