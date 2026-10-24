@@ -129,24 +129,37 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               <AlertCircle className="w-4 h-4" />
               <span>Conflicting Documentation Detected</span>
             </div>
-            <p className="text-amber-800">
-              Runbook specifies Redis Sentinel cache (v1.8), while the Architecture Diagram depicts an in-memory cache (v2.2).
-            </p>
+            <ul className="space-y-2">
+              {report.conflicting_evidence.map((citation) => (
+                <li key={citation.chunk_id ?? citation.source_id} className="text-amber-900">
+                  <span className="font-semibold">{citation.title} — {citation.location}: </span>
+                  {citation.snippet}
+                  <InlineCitationBadge citation={citation} onInspect={onInspectCitation} />
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
         {/* Primary Diagnosis / Content (Clean Gemini Typography) */}
-        {report?.likely_root_cause ? (
+        {report?.likely_root_cause || report?.answer ? (
           <div className="space-y-4 text-sm text-stone-800 leading-relaxed">
             <h3 className="font-semibold text-base text-stone-900">
               Incident Diagnosis & Findings
             </h3>
             <p className="text-stone-700 leading-relaxed">
-              {report.likely_root_cause}
+              {report.likely_root_cause || report.answer}
               {/* Inline Gemini Citations */}
-              {citations.slice(0, 3).map((cit, idx) => (
+              {citations
+                .filter((citation) =>
+                  (report.claims ?? []).some((claim) =>
+                    claim.verification_status === 'verified'
+                    && claim.citation_chunk_ids.includes(citation.chunk_id ?? ''),
+                  ),
+                )
+                .map((cit) => (
                 <InlineCitationBadge
-                  key={idx}
+                  key={cit.chunk_id ?? cit.source_id}
                   citation={cit}
                   onInspect={onInspectCitation}
                 />
@@ -161,7 +174,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 </h4>
                 <ul className="space-y-2 text-sm text-stone-700 pl-1">
                   {report.timeline.map((evt, idx) => {
-                    const matchedCitation = citations.find(c => c.source_id === evt.source_id) || citations[idx % citations.length];
+                    const matchedCitation = citations.find(c => c.chunk_id === evt.chunk_id)
+                      ?? citations.find(c => c.source_id === evt.source_id);
                     return (
                       <li key={idx} className="flex items-start justify-between flex-wrap gap-1">
                         <div className="flex items-baseline space-x-2">

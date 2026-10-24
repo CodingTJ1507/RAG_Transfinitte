@@ -1,0 +1,34 @@
+{
+  "name": "traceiq_vector_index",
+  "type": "vectorSearch",
+  "definition": {
+    "fields": [
+      {
+        "type": "vector",
+        "path": "embedding",
+        "numDimensions": 768,
+        "similarity": "cosine"
+      },
+      {
+        "type": "filter",
+        "path": "incident_id"
+      },
+      {
+        "type": "filter",
+        "path": "source_type"
+      },
+      {
+        "type": "filter",
+        "path": "version"
+      },
+      {
+        "type": "filter",
+        "path": "timestamp"
+      },
+      {
+        "type": "filter",
+        "path": "owner"
+      }
+    ]
+  }
+}

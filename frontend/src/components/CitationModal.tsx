@@ -64,7 +64,11 @@ export const CitationModal: React.FC<CitationModalProps> = ({ citation, onClose 
 
           {/* Metadata */}
           <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
-            <span>Confidence: {(citation.confidence * 100).toFixed(0)}%</span>
+            <span>
+              {citation.retrieval_score === undefined
+                ? 'Retrieved evidence'
+                : `Rank score: ${citation.retrieval_score.toFixed(4)}`}
+            </span>
             <span className="font-mono">{citation.source_id}</span>
           </div>
         </div>

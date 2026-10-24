@@ -1,0 +1,38 @@
+{
+  "name": "traceiq_search_index",
+  "type": "search",
+  "definition": {
+    "mappings": {
+      "dynamic": false,
+      "fields": {
+        "text": {
+          "type": "string",
+          "analyzer": "lucene.standard"
+        },
+        "title": {
+          "type": "string",
+          "analyzer": "lucene.standard"
+        },
+        "incident_id": {
+          "type": "token"
+        },
+        "source_type": {
+          "type": "token"
+        },
+        "version": {
+          "type": "token"
+        },
+        "owner": {
+          "type": "token"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "identifiers": {
+          "type": "document",
+          "dynamic": true
+        }
+      }
+    }
+  }
+}
