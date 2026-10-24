@@ -7,7 +7,6 @@ import { ChatInput } from '../components/ChatInput';
 import { UploadDrawer } from '../components/UploadDrawer';
 import { CitationModal } from '../components/CitationModal';
 import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
-import { getMockInvestigation } from '../lib/mockInvestigation';
 import { Plus, Settings, PanelLeftClose, PanelLeft, Sparkles } from 'lucide-react';
 
 const INITIAL_FILES: IngestedFile[] = [
@@ -73,7 +72,7 @@ export default function Home() {
     'Blameless Outage Audit & Attribution'
   ];
 
-  const handleSendMessage = async (query: string, attachedFiles?: string[], forceDemo: boolean = false) => {
+  const handleSendMessage = async (query: string, attachedFiles?: string[]) => {
     const userMsgId = `user-${Date.now()}`;
     const userMessage: ChatMessageType = {
       id: userMsgId,
@@ -88,34 +87,13 @@ export default function Home() {
 
     const startTime = Date.now();
 
-    // If user explicitly chose demo mode
-    if (forceDemo) {
-      setTimeout(() => {
-        const mockData = getMockInvestigation(query);
-        const durationMs = Date.now() - startTime;
-        const assistantMessage: ChatMessageType = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: mockData.report.likely_root_cause || (mockData.report.is_abstention ? mockData.report.abstention_reason || '' : 'Investigation completed.'),
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          thinkingSteps: mockData.steps,
-          thinkingDurationMs: Math.max(1400, durationMs),
-          report: mockData.report,
-          rawQuery: query
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        setIsInvestigating(false);
-      }, 1400);
-      return;
-    }
-
-    // Try connecting to live FastAPI backend at http://localhost:8000
+    // Connect to live FastAPI backend at http://localhost:8000
     try {
       const response = await fetch('http://localhost:8000/api/investigate/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
-        signal: AbortSignal.timeout(5000) // 5s timeout
+        signal: AbortSignal.timeout(6000) // 6s timeout
       });
 
       if (response.ok) {
@@ -172,7 +150,7 @@ export default function Home() {
         return;
       }
     } catch (err: any) {
-      // Differentiate errors cleanly without leaking internal code
+      // Clean context-aware error without leaking code or injecting sample evidence
       let errorTitle = 'Service Unreachable';
       let errorMessage = 'Unable to connect to the investigation service. Please verify your connection or try again.';
 
@@ -184,47 +162,20 @@ export default function Home() {
         errorMessage = 'The investigation took longer than expected to complete. Please try asking again.';
       }
 
-      // Check if this was an official benchmark scenario
-      const isBenchmarkScenario = 
-        query.toLowerCase().includes('payment') || 
-        query.toLowerCase().includes('pay-401') || 
-        query.toLowerCase().includes('redis') || 
-        query.toLowerCase().includes('secret');
-
-      if (isBenchmarkScenario) {
-        // Run the benchmark dataset
-        setTimeout(() => {
-          const mockData = getMockInvestigation(query);
-          const durationMs = Date.now() - startTime;
-          const assistantMessage: ChatMessageType = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: mockData.report.likely_root_cause || (mockData.report.is_abstention ? mockData.report.abstention_reason || '' : 'Investigation completed.'),
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            thinkingSteps: mockData.steps,
-            thinkingDurationMs: Math.max(1400, durationMs),
-            report: mockData.report,
-            rawQuery: query
-          };
-          setMessages((prev) => [...prev, assistantMessage]);
-          setIsInvestigating(false);
-        }, 1200);
-      } else {
-        // Honest specific error message without code leaks
-        setTimeout(() => {
-          const assistantErrorMessage: ChatMessageType = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: errorMessage,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isError: true,
-            errorTitle: errorTitle,
-            rawQuery: query
-          };
-          setMessages((prev) => [...prev, assistantErrorMessage]);
-          setIsInvestigating(false);
-        }, 600);
-      }
+      // In case of an error, strictly present the error message with a retry option — no sample evidence
+      setTimeout(() => {
+        const assistantErrorMessage: ChatMessageType = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: errorMessage,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isError: true,
+          errorTitle: errorTitle,
+          rawQuery: query
+        };
+        setMessages((prev) => [...prev, assistantErrorMessage]);
+        setIsInvestigating(false);
+      }, 500);
     }
   };
 
@@ -388,7 +339,6 @@ export default function Home() {
                   message={msg}
                   onInspectCitation={(citation) => setSelectedCitation(citation)}
                   onRetry={(q) => handleSendMessage(q)}
-                  onRunDemo={(q) => handleSendMessage(q, undefined, true)}
                 />
               ))}
 

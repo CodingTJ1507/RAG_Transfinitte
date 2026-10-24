@@ -11,7 +11,6 @@ interface ChatMessageProps {
   isStreaming?: boolean;
   onInspectCitation: (citation: Citation) => void;
   onRetry?: (query: string) => void;
-  onRunDemo?: (query: string) => void;
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
@@ -19,7 +18,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   isStreaming = false,
   onInspectCitation,
   onRetry,
-  onRunDemo,
 }) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
@@ -62,8 +60,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               {message.content || 'An unexpected error occurred while processing your request. Please try again.'}
             </p>
 
-            <div className="flex items-center space-x-2 pt-1">
-              {onRetry && message.rawQuery && (
+            {onRetry && message.rawQuery && (
+              <div className="pt-1">
                 <button
                   onClick={() => onRetry(message.rawQuery!)}
                   className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg flex items-center space-x-1.5 transition-colors cursor-pointer"
@@ -71,17 +69,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                   <RefreshCw className="w-3 h-3" />
                   <span>Retry</span>
                 </button>
-              )}
-
-              {onRunDemo && message.rawQuery && (
-                <button
-                  onClick={() => onRunDemo(message.rawQuery!)}
-                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-600 text-xs font-medium rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                >
-                  View Sample Evidence
-                </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
