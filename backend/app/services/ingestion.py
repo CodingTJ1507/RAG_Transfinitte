@@ -18,7 +18,12 @@ from app.core.database import (
     initialize_indexes,
 )
 from app.ingestion.chunking import chunk_evidence_units
-from app.ingestion.parsers import load_manifest, parse_source
+from app.ingestion.parsers import (
+    _safe_source_path,
+    _source_hash,
+    load_manifest,
+    parse_source,
+)
 from app.models.schemas import IngestionReport, SourceType
 from app.services.embeddings import embed_texts
 
@@ -47,6 +52,21 @@ def _stored_source_type(source_type: str) -> str:
 
 def _index_source(root: Path, entry: dict[str, Any]) -> tuple[str, int, int]:
     source_id = str(entry.get("source_id", ""))
+    path = _safe_source_path(root, entry["file_path"])
+    source_hash = _source_hash(path, entry.get("sha256"))
+
+    existing = get_sources_collection().find_one(
+        {"source_id": source_id},
+        {"_id": 0, "source_hash": 1, "ingestion_status": 1, "chunk_count": 1},
+    )
+    if (
+        existing
+        and existing.get("source_hash") == source_hash
+        and existing.get("ingestion_status") == "indexed"
+        and existing.get("chunk_count", 0) > 0
+    ):
+        return "skipped", 0, 0
+
     parsed = parse_source(root, entry)
     source = parsed.source
     source["source_type"] = _stored_source_type(str(source["source_type"]))
