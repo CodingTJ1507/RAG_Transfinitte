@@ -25,7 +25,7 @@ def get_db() -> Database[dict[str, Any]]:
                 settings.MONGODB_URI,
                 serverSelectionTimeoutMS=int(settings.REQUEST_TIMEOUT_SECONDS * 1000),
                 connectTimeoutMS=int(settings.REQUEST_TIMEOUT_SECONDS * 1000),
-                appname="TraceIQ",
+                appname="Concord.ai",
             )
             _client.admin.command("ping")
             _database = _client[settings.MONGODB_DATABASE]

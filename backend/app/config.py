@@ -15,7 +15,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    APP_NAME: str = "TraceIQ - Evidence-Grounded Engineering Investigator"
+    APP_NAME: str = "Concord.ai - Evidence-Grounded Engineering Investigator"
     ENVIRONMENT: str = "development"
     HOST: str = "0.0.0.0"
     PORT: int = 8000

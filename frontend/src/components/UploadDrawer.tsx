@@ -59,44 +59,44 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
     : files.filter(f => f.source_type === selectedType);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-stone-900/25 backdrop-blur-2xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/35 backdrop-blur-2xs animate-in fade-in duration-150">
       <div 
-        className="w-full max-w-md bg-[#faf8f5] border-l border-stone-300 h-full flex flex-col justify-between p-6 overflow-y-auto"
+        className="w-full max-w-md bg-[#ffffff] border-l border-[#dde4ec] h-full flex flex-col justify-between p-6 overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-stone-200">
+          <div className="flex items-center justify-between pb-4 border-b border-[#dde4ec]">
             <div>
-              <h2 className="text-base font-semibold text-stone-900">
+              <h2 className="text-base font-bold text-[#162748]">
                 Evidence Collection
               </h2>
-              <p className="text-xs text-stone-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Indexed in MongoDB Atlas
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-[#eae5dc] rounded-full transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-[#162748] hover:bg-[#eaf0f6] rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Quick Demo Pack Loader */}
-          <div className="mt-4 p-3.5 rounded-xl bg-[#f0ede6] border border-stone-300/80 shadow-2xs">
-            <h4 className="text-xs font-semibold text-stone-800">
+          <div className="mt-4 p-3.5 rounded-xl bg-[#eef2f6] border border-[#dde4ec] shadow-2xs">
+            <h4 className="text-xs font-bold text-[#162748]">
               Demo Incident Evidence Pack
             </h4>
-            <p className="text-xs text-stone-600 mt-0.5 leading-relaxed">
-              Load the 5 benchmark evidence files for the payment failure incident.
+            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+              Load the benchmark evidence files for the payment failure incident.
             </p>
             <button
               onClick={() => void handleLoadPack()}
               disabled={loadingPack || isUploading}
-              className="mt-2.5 px-3 py-1.5 text-xs font-medium bg-stone-800 text-stone-50 hover:bg-stone-900 rounded-lg w-full flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+              className="mt-2.5 px-3 py-1.5 text-xs font-semibold bg-[#162748] text-white hover:bg-[#1f3660] hover:shadow-[0_0_12px_rgba(9,190,193,0.3)] rounded-lg w-full flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
             >
-              <FolderSync className="w-3.5 h-3.5" />
+              <FolderSync className="w-3.5 h-3.5 text-[#09bec1]" />
               <span>{loadingPack ? 'Indexing evidence pack…' : 'Load incident evidence pack'}</span>
             </button>
           </div>
@@ -111,7 +111,7 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
               if (e.dataTransfer.files) void handleManualUpload(Array.from(e.dataTransfer.files));
             }}
             className={`mt-4 border border-dashed rounded-xl p-4 text-center transition-all ${
-              dragActive ? 'border-stone-700 bg-[#efebe4]' : 'border-stone-300 bg-[#f3efe8]/50 hover:border-stone-400'
+              dragActive ? 'border-[#09bec1] bg-[#eaf0f6]' : 'border-[#d4dee8] bg-[#f8fafc] hover:border-[#09bec1]'
             }`}
           >
             <input
@@ -127,15 +127,15 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
               }}
             />
             <label htmlFor="file-upload" className="cursor-pointer block">
-              <Upload className="w-5 h-5 text-stone-400 mx-auto mb-1" />
-              <p className="text-xs font-medium text-stone-700">
+              <Upload className="w-5 h-5 text-slate-400 mx-auto mb-1" />
+              <p className="text-xs font-semibold text-[#162748]">
                 {isUploading ? 'Uploading and indexing…' : 'Upload evidence files'}
               </p>
-              <p className="text-[11px] text-stone-400 mt-0.5">PDF, DOCX, Markdown, HTML, VTT, text, JSON, CSV, PNG</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">PDF, DOCX, Markdown, HTML, VTT, text, JSON, CSV, PNG</p>
             </label>
           </div>
           {uploadError && (
-            <p className="mt-2 text-xs text-rose-700" role="alert">{uploadError}</p>
+            <p className="mt-2 text-xs text-rose-600 font-medium" role="alert">{uploadError}</p>
           )}
 
           {/* Category Filter Chips */}
@@ -144,10 +144,10 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
               <button
                 key={t}
                 onClick={() => setSelectedType(t)}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
                   selectedType === t
-                    ? 'bg-stone-800 text-stone-50 border-stone-800'
-                    : 'bg-[#eae5dc] text-stone-700 border-stone-300 hover:bg-[#dfd9ce]'
+                    ? 'bg-[#162748] text-white border-[#162748]'
+                    : 'bg-[#eaf0f6] text-[#162748] border-[#d4dee8] hover:border-[#09bec1]/40 hover:bg-[#dce6f0]'
                 }`}
               >
                 {t === 'all' ? 'All' : t.replace('_', ' ')}
@@ -160,25 +160,25 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
             {filteredFiles.map((file) => (
               <div
                 key={file.id}
-                className="p-2.5 rounded-lg border border-stone-200/80 hover:bg-[#f0ede6] flex items-center justify-between group transition-colors shadow-2xs"
+                className="p-2.5 rounded-lg border border-[#dde4ec] hover:bg-[#eef2f6] flex items-center justify-between group transition-colors shadow-2xs"
               >
                 <div className="min-w-0">
                   <div className="flex items-center space-x-1.5">
-                    <span className="font-mono text-[9px] font-semibold text-stone-600 bg-[#f7f5f0] px-1 py-0.2 rounded border border-stone-300">
+                    <span className="font-mono text-[9px] font-semibold text-[#087f82] bg-[#09bec1]/10 px-1 py-0.2 rounded border border-[#09bec1]/25">
                       {getSourceTypeLabel(file.source_type)}
                     </span>
-                    <p className="text-xs font-medium text-stone-800 truncate">
+                    <p className="text-xs font-medium text-[#162748] truncate">
                       {file.name}
                     </p>
                   </div>
-                  <p className="text-[10px] text-stone-500 mt-0.5 pl-6">
+                  <p className="text-[10px] text-slate-500 mt-0.5 pl-6">
                     {file.chunkCount} chunks • {file.size}
                   </p>
                 </div>
 
                 <button
                   onClick={() => onRemoveFile(file.id)}
-                  className="p-1 text-stone-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Remove"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -189,10 +189,10 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
         </div>
 
         {/* Bottom */}
-        <div className="pt-4 border-t border-stone-200 mt-4">
+        <div className="pt-4 border-t border-[#dde4ec] mt-4">
           <button
             onClick={onClose}
-            className="w-full py-2 text-xs font-medium text-stone-700 bg-[#eae5dc] hover:bg-[#dfd9ce] rounded-lg transition-colors cursor-pointer"
+            className="w-full py-2 text-xs font-semibold text-[#162748] bg-[#eaf0f6] hover:bg-[#dce6f0] rounded-lg transition-colors cursor-pointer"
           >
             Close
           </button>

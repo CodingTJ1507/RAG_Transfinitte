@@ -260,44 +260,45 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f7f5f0] text-stone-800">
-      {/* Gemini Collapsible Sidebar */}
+    <div className="min-h-screen flex bg-[#f8fafc] text-[#162748]">
+      {/* Concord Collapsible Sidebar */}
       {isSidebarOpen && (
-        <aside className="w-64 border-r border-[#ded9cf]/80 bg-[#efebe4] p-3 flex flex-col justify-between shrink-0 hidden md:flex transition-all">
+        <aside className="w-64 border-r border-[#dde4ec] bg-[#eef2f6] p-3 flex flex-col justify-between shrink-0 hidden md:flex transition-all">
           <div>
-            {/* Top Gemini Brand & Toggle */}
+            {/* Top Brand & Toggle */}
             <div className="flex items-center justify-between px-2 py-1 mb-4">
               <div className="flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-blue-600" />
-                <span className="font-semibold text-sm text-stone-800">TraceIQ</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/concord-mark.svg" alt="Concord.ai" className="w-5 h-5 object-contain" />
+                <span className="font-bold text-sm text-[#162748]">Concord.ai</span>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
-                className="p-1 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-300/50 cursor-pointer"
+                className="p-1 text-slate-400 hover:text-[#162748] rounded-lg hover:bg-slate-200/60 cursor-pointer"
                 title="Collapse sidebar"
               >
                 <PanelLeftClose className="w-4 h-4" />
               </button>
             </div>
 
-            {/* New Chat Button */}
+            {/* New Investigation Button */}
             <button
               onClick={handleResetChat}
-              className="w-full flex items-center space-x-2 px-3 py-2 rounded-full bg-[#e2ded5] hover:bg-[#d8d3c8] text-stone-700 text-xs font-medium transition-colors mb-5 cursor-pointer"
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-full bg-[#eaf0f6] hover:bg-[#dce6f0] border border-[#d4dee8] hover:border-[#09bec1]/40 text-[#162748] text-xs font-semibold transition-all mb-5 cursor-pointer shadow-2xs"
             >
-              <Plus className="w-4 h-4 text-stone-600" />
+              <Plus className="w-4 h-4 text-[#09bec1]" />
               <span>New investigation</span>
             </button>
 
             {/* Recent Chats Section */}
             <div className="px-2">
-              <span className="text-[11px] font-medium text-stone-500 block mb-2">Recent</span>
+              <span className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase block mb-2">Recent</span>
               <div className="space-y-1">
                 {pastConversations.map((item, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(item)}
-                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-stone-300/50 text-xs text-stone-700 truncate block transition-colors font-normal cursor-pointer"
+                    className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#e4ebf2] text-xs text-slate-700 truncate block transition-colors font-medium cursor-pointer"
                   >
                     {item}
                   </button>
@@ -307,17 +308,17 @@ export default function Home() {
           </div>
 
           {/* User Profile Footer */}
-          <div className="border-t border-[#ded9cf]/80 pt-3 px-2 flex items-center justify-between">
+          <div className="border-t border-[#dde4ec] pt-3 px-2 flex items-center justify-between">
             <div className="flex items-center space-x-2 min-w-0">
-              <div className="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                T
+              <div className="w-7 h-7 rounded-full bg-[#162748] text-[#09bec1] flex items-center justify-center font-bold text-xs shrink-0 border border-[#09bec1]/30">
+                C
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-stone-800 truncate">Tanishq</p>
-                <p className="text-[10px] text-stone-500">Pro</p>
+                <p className="text-xs font-semibold text-[#162748] truncate">Investigator</p>
+                <p className="text-[10px] text-slate-500">Concord Pro</p>
               </div>
             </div>
-            <button className="p-1 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer">
+            <button className="p-1 text-slate-400 hover:text-[#162748] rounded-lg cursor-pointer">
               <Settings className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -350,14 +351,14 @@ export default function Home() {
         <main className="flex-1 max-w-3xl w-full mx-auto px-4 md:px-6 pt-6 flex flex-col justify-between">
           <section
             aria-label="Evidence filters"
-            className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-2 rounded-xl border border-[#ded9cf] bg-[#efebe4] p-3"
+            className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-2 rounded-xl border border-[#dde4ec] bg-[#eef2f6] p-3"
           >
-            <label className="text-[10px] font-medium text-stone-500">
+            <label className="text-[10px] font-semibold text-slate-500">
               Source type
               <select
                 value={sourceTypeFilter}
                 onChange={(event) => setSourceTypeFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+                className="mt-1 w-full rounded-lg border border-[#d4dee8] bg-white px-2 py-1.5 text-xs text-[#162748] focus:border-[#09bec1] outline-hidden"
               >
                 <option value="">All types</option>
                 <option value="document">Documents</option>
@@ -367,85 +368,89 @@ export default function Home() {
                 <option value="structured_record">Structured records</option>
               </select>
             </label>
-            <label className="text-[10px] font-medium text-stone-500">
+            <label className="text-[10px] font-semibold text-slate-500">
               Version
               <input
                 value={versionFilter}
                 onChange={(event) => setVersionFilter(event.target.value)}
                 placeholder="Any version"
-                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+                className="mt-1 w-full rounded-lg border border-[#d4dee8] bg-white px-2 py-1.5 text-xs text-[#162748] focus:border-[#09bec1] outline-hidden"
               />
             </label>
-            <label className="text-[10px] font-medium text-stone-500">
+            <label className="text-[10px] font-semibold text-slate-500">
               Owner
               <input
                 value={ownerFilter}
                 onChange={(event) => setOwnerFilter(event.target.value)}
                 placeholder="Any owner"
-                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+                className="mt-1 w-full rounded-lg border border-[#d4dee8] bg-white px-2 py-1.5 text-xs text-[#162748] focus:border-[#09bec1] outline-hidden"
               />
             </label>
-            <label className="text-[10px] font-medium text-stone-500">
+            <label className="text-[10px] font-semibold text-slate-500">
               From
               <input
                 type="datetime-local"
                 value={timeStartFilter}
                 onChange={(event) => setTimeStartFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+                className="mt-1 w-full rounded-lg border border-[#d4dee8] bg-white px-2 py-1.5 text-xs text-[#162748] focus:border-[#09bec1] outline-hidden"
               />
             </label>
-            <label className="text-[10px] font-medium text-stone-500">
+            <label className="text-[10px] font-semibold text-slate-500">
               To
               <input
                 type="datetime-local"
                 value={timeEndFilter}
                 onChange={(event) => setTimeEndFilter(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-stone-300 bg-[#faf8f5] px-2 py-1.5 text-xs text-stone-700"
+                className="mt-1 w-full rounded-lg border border-[#d4dee8] bg-white px-2 py-1.5 text-xs text-[#162748] focus:border-[#09bec1] outline-hidden"
               />
             </label>
           </section>
           {messages.length === 0 ? (
-            /* Gemini Welcome Screen */
-            <div className="my-auto py-10 max-w-xl mx-auto text-center space-y-3">
-              <h2 className="text-2xl md:text-3xl font-semibold text-stone-800 tracking-tight">
-                Investigate with Evidence
+            /* Concord.ai Welcome Screen */
+            <div className="my-auto py-10 max-w-xl mx-auto text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#162748] flex items-center justify-center p-3 shadow-lg border border-[#09bec1]/30">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/concord-mark.svg" alt="Concord.ai" className="w-full h-full object-contain" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-[#162748] tracking-tight">
+                Investigate with Concord.ai
               </h2>
-              <p className="text-sm text-stone-600 leading-relaxed max-w-md mx-auto">
-                Connect documents, changelogs, images, meeting transcripts, and structured logs into cited incident findings.
+              <p className="text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+                Connect documents, changelogs, metric graphs, meeting transcripts, and structured logs into verified, evidence-grounded findings.
               </p>
 
               {/* Starter Chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-6 text-left">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-4 text-left">
                 <button
                   onClick={() => handleSendMessage("Why did payment failures begin after yesterday's deployment?")}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
+                  className="p-3.5 rounded-xl bg-white border border-[#dde4ec] hover:border-[#09bec1] hover:shadow-xs transition-all text-xs text-[#162748] cursor-pointer shadow-2xs group"
                 >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Why did payments fail?</span>
-                  <span className="text-stone-500 text-[11px]">Connects logs, v2.4.0 notes, and transcript.</span>
+                  <span className="font-semibold block text-[#162748] group-hover:text-[#087f82] mb-0.5">Why did payments fail?</span>
+                  <span className="text-slate-500 text-[11px]">Connects logs, v2.4.0 notes, and transcript.</span>
                 </button>
 
                 <button
                   onClick={() => handleSendMessage('Find every occurrence of error code PAY-401 and compare the affected versions.')}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
+                  className="p-3.5 rounded-xl bg-white border border-[#dde4ec] hover:border-[#09bec1] hover:shadow-xs transition-all text-xs text-[#162748] cursor-pointer shadow-2xs group"
                 >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Error PAY-401 occurrences</span>
-                  <span className="text-stone-500 text-[11px]">Exact keyword search across versions.</span>
+                  <span className="font-semibold block text-[#162748] group-hover:text-[#087f82] mb-0.5">Error PAY-401 occurrences</span>
+                  <span className="text-slate-500 text-[11px]">Exact keyword search across versions.</span>
                 </button>
 
                 <button
                   onClick={() => handleSendMessage('The runbook says the service uses Redis, but the latest architecture diagram shows an in-memory cache. Which is correct?')}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
+                  className="p-3.5 rounded-xl bg-white border border-[#dde4ec] hover:border-[#09bec1] hover:shadow-xs transition-all text-xs text-[#162748] cursor-pointer shadow-2xs group"
                 >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Redis vs In-Memory cache</span>
-                  <span className="text-stone-500 text-[11px]">Detects contradictory documentation.</span>
+                  <span className="font-semibold block text-[#162748] group-hover:text-[#087f82] mb-0.5">Redis vs In-Memory cache</span>
+                  <span className="text-slate-500 text-[11px]">Detects contradictory documentation.</span>
                 </button>
 
                 <button
                   onClick={() => handleSendMessage('Which engineer secretly caused the outage, and what exact line of code did they change?')}
-                  className="p-3 rounded-xl bg-[#efebe3] border border-[#ded9cf] hover:bg-[#e6e1d7] transition-colors text-xs text-stone-700 cursor-pointer shadow-2xs"
+                  className="p-3.5 rounded-xl bg-white border border-[#dde4ec] hover:border-[#09bec1] hover:shadow-xs transition-all text-xs text-[#162748] cursor-pointer shadow-2xs group"
                 >
-                  <span className="font-semibold block text-stone-900 mb-0.5">Outage code blame audit</span>
-                  <span className="text-stone-500 text-[11px]">Tests evidence-based abstention.</span>
+                  <span className="font-semibold block text-[#162748] group-hover:text-[#087f82] mb-0.5">Outage code blame audit</span>
+                  <span className="text-slate-500 text-[11px]">Tests evidence-based abstention.</span>
                 </button>
               </div>
             </div>

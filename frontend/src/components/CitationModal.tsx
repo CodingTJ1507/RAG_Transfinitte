@@ -22,31 +22,31 @@ export const CitationModal: React.FC<CitationModalProps> = ({ citation, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/30 backdrop-blur-2xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-2xs animate-in fade-in duration-150">
       <div 
-        className="w-full max-w-lg p-6 bg-[#faf8f5] rounded-2xl shadow-xl border border-stone-300/90 max-h-[90vh] flex flex-col justify-between"
+        className="w-full max-w-lg p-6 bg-[#ffffff] rounded-2xl shadow-xl border border-[#dde4ec] max-h-[90vh] flex flex-col justify-between"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
           {/* Header */}
-          <div className="flex items-start justify-between pb-3 border-b border-stone-200">
+          <div className="flex items-start justify-between pb-3 border-b border-[#dde4ec]">
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-mono text-[10px] font-semibold text-stone-700 bg-[#eae5dc] px-2 py-0.5 rounded-full border border-stone-300">
+                <span className="font-mono text-[10px] font-semibold text-[#087f82] bg-[#09bec1]/10 px-2 py-0.5 rounded-full border border-[#09bec1]/25">
                   {getSourceTypeLabel(citation.source_type)}
                 </span>
-                <span className="text-xs font-mono text-stone-500">
+                <span className="text-xs font-mono text-slate-500">
                   {citation.location}
                 </span>
               </div>
-              <h3 className="text-sm font-semibold text-stone-900 mt-1">
+              <h3 className="text-sm font-bold text-[#162748] mt-1.5">
                 {citation.title}
               </h3>
             </div>
 
             <button
               onClick={onClose}
-              className="p-1.5 text-stone-400 hover:text-stone-700 hover:bg-[#eae5dc] rounded-full transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-[#162748] hover:bg-[#eaf0f6] rounded-full transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -54,37 +54,37 @@ export const CitationModal: React.FC<CitationModalProps> = ({ citation, onClose 
 
           {/* Passage Container */}
           <div className="mt-4">
-            <label className="text-[11px] font-medium text-stone-500 uppercase tracking-wider block mb-1.5">
+            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
               Extracted Ground-Truth Chunk
             </label>
-            <div className="p-3.5 text-xs text-stone-800 leading-relaxed font-mono bg-[#f0ede6] border border-stone-300/80 rounded-xl overflow-y-auto max-h-52 select-text">
+            <div className="p-3.5 text-xs text-[#162748] leading-relaxed font-mono bg-[#f8fafc] border border-[#d4dee8] rounded-xl overflow-y-auto max-h-52 select-text">
               {citation.snippet}
             </div>
           </div>
 
           {/* Metadata */}
-          <div className="mt-3 flex items-center justify-between text-xs text-stone-500">
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
             <span>
               {citation.retrieval_score === undefined
                 ? 'Retrieved evidence'
                 : `Rank score: ${citation.retrieval_score.toFixed(4)}`}
             </span>
-            <span className="font-mono">{citation.source_id}</span>
+            <span className="font-mono text-[#087f82]">{citation.source_id}</span>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-6 pt-3 border-t border-stone-200 flex items-center justify-end space-x-2">
+        <div className="mt-6 pt-3 border-t border-[#dde4ec] flex items-center justify-end space-x-2">
           <button
             onClick={handleCopy}
-            className="px-3.5 py-1.5 flex items-center space-x-1.5 text-xs font-medium text-stone-700 bg-[#eae5dc] hover:bg-[#dfd9ce] rounded-lg transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 flex items-center space-x-1.5 text-xs font-semibold text-[#162748] bg-[#eaf0f6] hover:bg-[#dce6f0] rounded-lg transition-colors cursor-pointer border border-[#d4dee8]"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#09bec1]" />}
             <span>{copied ? 'Copied' : 'Copy snippet'}</span>
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-medium text-stone-50 bg-stone-800 hover:bg-stone-900 rounded-lg transition-colors cursor-pointer"
+            className="px-4 py-1.5 text-xs font-semibold text-white bg-[#162748] hover:bg-[#1f3660] hover:shadow-[0_0_12px_rgba(9,190,193,0.3)] rounded-lg transition-all cursor-pointer"
           >
             Close
           </button>
