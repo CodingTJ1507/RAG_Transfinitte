@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ChatMessage as ChatMessageType, Citation } from '../lib/types';
 import { ThinkingAccordion } from './ThinkingAccordion';
 import { InlineCitationBadge, CompactCitationPill } from './CitationCard';
-import { Copy, Check, ThumbsUp, ThumbsDown, Share2, Sparkles, AlertCircle, ShieldAlert, RefreshCw, WifiOff } from 'lucide-react';
+import { Copy, Check, ThumbsUp, ThumbsDown, Share2, Sparkles, AlertCircle, ShieldAlert, RefreshCw } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -43,44 +43,42 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     );
   }
 
-  // Handle Backend Connection Failure / Retry State
+  // Handle Clean, Production-Grade User Errors (No Leaked Code / Stack Traces)
   if (message.isError) {
     return (
       <div className="flex justify-start mb-8">
         <div className="w-full max-w-3xl space-y-3">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
-              <WifiOff className="w-3.5 h-3.5 text-rose-600" />
+            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-3.5 h-3.5 text-slate-500" />
             </div>
-            <span className="text-xs font-semibold text-slate-700">Connection Failed</span>
+            <span className="text-xs font-semibold text-slate-700">
+              {message.errorTitle || 'Something Went Wrong'}
+            </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-rose-900 text-sm space-y-3">
-            <p className="text-xs leading-relaxed text-rose-800">
-              {message.content || 'Unable to connect to TraceIQ backend service at http://localhost:8000.'}
-            </p>
-            <p className="text-[11px] text-slate-500 font-mono bg-white p-2 rounded-lg border border-rose-200/50">
-              Make sure your FastAPI server is running: <br/>
-              <code className="text-slate-800 font-bold">cd backend &amp;&amp; uvicorn app.main:app --reload --port 8000</code>
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-700 text-xs leading-relaxed space-y-3">
+            <p className="text-xs text-slate-600">
+              {message.content || 'An unexpected error occurred while processing your request. Please try again.'}
             </p>
 
             <div className="flex items-center space-x-2 pt-1">
               {onRetry && message.rawQuery && (
                 <button
                   onClick={() => onRetry(message.rawQuery!)}
-                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg flex items-center space-x-1.5 transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  <span>Retry Connection</span>
+                  <span>Retry</span>
                 </button>
               )}
 
               {onRunDemo && message.rawQuery && (
                 <button
                   onClick={() => onRunDemo(message.rawQuery!)}
-                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-600 text-xs font-medium rounded-lg border border-slate-200 transition-colors cursor-pointer"
                 >
-                  Preview Demo Dataset
+                  View Sample Evidence
                 </button>
               )}
             </div>

@@ -47,6 +47,7 @@ export interface ChatMessage {
   report?: InvestigationReport;
   attachedFiles?: string[];
   isError?: boolean;
+  errorTitle?: string;
   rawQuery?: string;
 }
 
