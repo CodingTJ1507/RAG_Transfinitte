@@ -85,7 +85,7 @@ def generate_json(system_instruction: str, payload: dict[str, Any]) -> dict[str,
 
 def describe_image(data: bytes, mime_type: str) -> dict[str, Any]:
     try:
-        response = get_gemini_client().models.generate_content(
+        response = call_with_retries(lambda: get_gemini_client().models.generate_content(
             model=settings.LLM_MODEL,
             contents=[
                 types.Part.from_bytes(data=data, mime_type=mime_type),
@@ -95,7 +95,7 @@ def describe_image(data: bytes, mime_type: str) -> dict[str, Any]:
                 temperature=0,
                 response_mime_type="application/json",
             ),
-        )
+        ))
         if not response.text:
             raise ValueError("Gemini returned an empty image description")
         result = json.loads(response.text)
