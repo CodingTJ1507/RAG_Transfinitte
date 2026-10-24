@@ -1,13 +1,29 @@
 import hashlib
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import settings
+
+
+def _to_utc_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str) and value:
+        iso_value = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+        try:
+            parsed = datetime.fromisoformat(iso_value)
+        except ValueError:
+            return None
+    else:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _split_text(text: str, size: int, overlap: int) -> list[tuple[str, int]]:
@@ -81,12 +97,14 @@ def chunk_evidence_units(
             chunk_id = str(uuid5(NAMESPACE_URL, chunk_identity))
             timestamp = locator.get("timestamp") or source.get("created_at")
             if source.get("source_type") == "transcript" and locator.get("start") and source.get("recording_start"):
-                recording_start = datetime.fromisoformat(source["recording_start"].replace("Z", "+00:00"))
+                recording_start = _to_utc_datetime(source["recording_start"])
                 cue_time = locator["start"].replace(",", ".")
                 hours, minutes, seconds = cue_time.split(":")
-                timestamp = (recording_start + timedelta(
-                    hours=int(hours), minutes=int(minutes), seconds=float(seconds)
-                )).isoformat().replace("+00:00", "Z")
+                if recording_start:
+                    timestamp = recording_start + timedelta(
+                        hours=int(hours), minutes=int(minutes), seconds=float(seconds)
+                    )
+            timestamp = _to_utc_datetime(timestamp)
             results.append({
                 "chunk_id": chunk_id,
                 "source_id": source_id,

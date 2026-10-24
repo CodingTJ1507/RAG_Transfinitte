@@ -7,6 +7,7 @@ from app.config import settings
 from app.core.database import get_chunks_collection
 from app.models.schemas import Citation
 from app.retrieval.vector_search import (
+    _date_value,
     build_vector_filter,
     citation_from_document,
     perform_vector_search,
@@ -40,15 +41,13 @@ def _atlas_search_filters(filters: dict[str, Any] | None) -> list[dict[str, Any]
             source_types = [source_types]
         source_types = [getattr(item, "value", item) for item in source_types]
         clauses.append({"in": {"path": "source_type", "value": list(source_types)}})
-    time_range: dict[str, str] = {}
+    time_range: dict[str, datetime] = {}
     for name, operator in (("time_range_start", "gte"), ("time_range_end", "lte")):
         value = filters.get(name)
         if value:
-            time_range[operator] = (
-                value.isoformat().replace("+00:00", "Z")
-                if isinstance(value, datetime)
-                else str(value)
-            )
+            date_value = _date_value(value)
+            if date_value:
+                time_range[operator] = date_value
     if time_range:
         clauses.append({"range": {"path": "timestamp", **time_range}})
     return clauses

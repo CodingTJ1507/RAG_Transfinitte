@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from app.config import settings
@@ -10,12 +10,20 @@ from app.services.embeddings import embed_query
 logger = logging.getLogger(__name__)
 
 
-def _date_value(value: Any) -> str | None:
-    if value is None:
-        return None
+def _date_value(value: Any) -> datetime | None:
     if isinstance(value, datetime):
-        return value.isoformat().replace("+00:00", "Z")
-    return str(value)
+        parsed = value
+    elif isinstance(value, str) and value:
+        iso_value = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+        try:
+            parsed = datetime.fromisoformat(iso_value)
+        except ValueError:
+            return None
+    else:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def build_vector_filter(filters: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -31,11 +39,15 @@ def build_vector_filter(filters: dict[str, Any] | None) -> dict[str, Any] | None
             source_types = [getattr(source_types, "value", source_types)]
         source_types = [getattr(value, "value", value) for value in source_types]
         clauses.append({"source_type": {"$in": list(source_types)}})
-    timestamp_filter: dict[str, str] = {}
+    timestamp_filter: dict[str, datetime] = {}
     if filters.get("time_range_start"):
-        timestamp_filter["$gte"] = _date_value(filters["time_range_start"])
+        start = _date_value(filters["time_range_start"])
+        if start:
+            timestamp_filter["$gte"] = start
     if filters.get("time_range_end"):
-        timestamp_filter["$lte"] = _date_value(filters["time_range_end"])
+        end = _date_value(filters["time_range_end"])
+        if end:
+            timestamp_filter["$lte"] = end
     if timestamp_filter:
         clauses.append({"timestamp": timestamp_filter})
     return {"$and": clauses} if len(clauses) > 1 else (clauses[0] if clauses else None)
@@ -63,12 +75,19 @@ def citation_from_document(document: dict[str, Any], score: float | None = None)
     if locator.get("analysis") == "metadata_only":
         location_parts.append("Image description only; visual content not analyzed")
     location = ", ".join(location_parts) or "Source-level evidence"
+    raw_timestamp = document.get("timestamp") or locator.get("timestamp")
+    parsed_timestamp = _date_value(raw_timestamp)
+    citation_timestamp = (
+        parsed_timestamp.isoformat().replace("+00:00", "Z")
+        if parsed_timestamp
+        else raw_timestamp
+    )
     metadata = {
         "incident_id": document.get("incident_id"),
         "owner": document.get("owner"),
         "version": document.get("version"),
         "content_hash": document.get("content_hash"),
-        "timestamp": document.get("timestamp") or locator.get("timestamp"),
+        "timestamp": citation_timestamp,
         "locator": locator,
         "services": document.get("metadata", {}).get("services", []),
         "analysis_status": document.get("analysis_status"),

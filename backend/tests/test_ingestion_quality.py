@@ -1,10 +1,12 @@
 import unittest
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
 from app.ingestion.chunking import chunk_evidence_units
 from app.ingestion.parsers import load_manifest, parse_source
+from app.retrieval.vector_search import build_vector_filter, citation_from_document
 
 
 DATASET = Path(__file__).resolve().parents[1] / "synthetic_data"
@@ -192,3 +194,33 @@ class ImageReadingTests(unittest.TestCase):
         unit = parsed.units[0]
         self.assertEqual(unit["locator"]["analysis"], "metadata_only")
         self.assertEqual(parsed.source["analysis_status"], "metadata_only")
+
+
+class TimestampTests(unittest.TestCase):
+    def test_chunks_store_real_dates(self):
+        parsed = parse_demo("TRN-002")
+        chunks = chunk_evidence_units(
+            parsed.units,
+            {**parsed.source, "source_type": "transcript"},
+        )
+        cue4 = next(
+            chunk for chunk in chunks
+            if chunk["locator"]["cue_id"] == "cue-004"
+        )
+        self.assertEqual(
+            cue4["timestamp"],
+            datetime(2026, 10, 23, 10, 20, 52, tzinfo=timezone.utc),
+        )
+
+    def test_vector_filter_uses_datetimes(self):
+        start = datetime(2026, 10, 23, 10, 0, tzinfo=timezone.utc)
+        clause = build_vector_filter({"time_range_start": start})
+        self.assertIsInstance(clause["timestamp"]["$gte"], datetime)
+
+    def test_citation_timestamp_remains_iso_utc_text(self):
+        citation = citation_from_document({
+            "source_id": "TRN-002",
+            "source_type": "transcript",
+            "timestamp": datetime(2026, 10, 23, 10, 20, 52),
+        })
+        self.assertEqual(citation.metadata["timestamp"], "2026-10-23T10:20:52Z")
