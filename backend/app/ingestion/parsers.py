@@ -229,19 +229,76 @@ def _parse_vtt(path: Path) -> list[dict[str, Any]]:
     return units
 
 
-def _parse_text(path: Path) -> list[dict[str, Any]]:
-    units: list[dict[str, Any]] = []
-    section = "Transcript"
-    for line_number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+TXT_HEADING_MAX_LENGTH = 40
+TXT_PART_MAX_CHARS = 2000
+
+
+def _is_text_heading(line: str) -> bool:
+    clean = line.strip()
+    return (
+        len(clean) < TXT_HEADING_MAX_LENGTH
+        and re.search(r"[A-Za-z]", clean) is not None
+        and clean.upper() == clean
+    )
+
+
+def _text_paragraphs(lines: list[str]) -> list[tuple[int, str]]:
+    paragraphs: list[tuple[int, str]] = []
+    current: list[str] = []
+    start = 0
+    for line_number, line in enumerate(lines, start=1):
+        clean = line.strip()
+        if clean:
+            if not current:
+                start = line_number
+            current.append(clean)
+        elif current:
+            paragraphs.append((start, " ".join(current)))
+            current = []
+    if current:
+        paragraphs.append((start, " ".join(current)))
+    return paragraphs
+
+
+def _pack_parts(paragraphs: list[tuple[int, str]], limit: int = TXT_PART_MAX_CHARS) -> list[dict[str, Any]]:
+    parts: list[tuple[int, str]] = []
+    for line_number, paragraph in paragraphs:
+        if parts and len(parts[-1][1]) + 1 + len(paragraph) <= limit:
+            parts[-1] = (parts[-1][0], f"{parts[-1][1]} {paragraph}")
+        else:
+            parts.append((line_number, paragraph))
+    units = [
+        _text_unit(text, {"section": f"Part {number}", "line": start})
+        for number, (start, text) in enumerate(parts, start=1)
+    ]
+    return [unit for unit in units if unit]
+
+
+def _text_sections(content_lines: list[tuple[int, str]]) -> list[dict[str, Any]]:
+    sections: list[tuple[str, int, list[str]]] = []
+    for line_number, line in content_lines:
         clean = line.strip()
         if not clean:
             continue
-        if len(clean) < 100 and clean.upper() == clean and re.search(r"[A-Z]", clean):
-            section = clean
-        unit = _text_unit(clean, {"section": section, "line": line_number})
-        if unit:
-            units.append(unit)
-    return units
+        if _is_text_heading(clean):
+            sections.append((clean, line_number, [clean]))
+        elif sections:
+            sections[-1][2].append(clean)
+        else:
+            sections.append(("HEADER", line_number, [clean]))
+    units = [_text_unit(" ".join(texts), {"section": name, "line": start}) for name, start, texts in sections]
+    return [unit for unit in units if unit]
+
+
+def _parse_text(path: Path) -> list[dict[str, Any]]:
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    title_index = next((index for index, line in enumerate(lines) if line.strip()), None)
+    if title_index is None:
+        return []
+    content_lines = list(enumerate(lines[title_index + 1:], title_index + 2))
+    if any(_is_text_heading(line) for _, line in content_lines):
+        return _text_sections(content_lines)
+    return _pack_parts(_text_paragraphs(lines))
 
 
 def _structured_records(value: Any) -> list[tuple[str, dict[str, Any]]]:

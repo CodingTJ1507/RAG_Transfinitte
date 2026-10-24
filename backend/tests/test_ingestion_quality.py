@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 from pathlib import Path
 
 from app.ingestion.parsers import load_manifest, parse_source
@@ -29,3 +30,37 @@ class HtmlSectionTests(unittest.TestCase):
                 if unit["locator"]["html_id"] != "intro"
             ]
             self.assertEqual(len(units), h2_count, source_id)
+
+
+class TextSectionTests(unittest.TestCase):
+    def test_handover_note_has_one_unit_per_section(self):
+        units = parse_demo("TRN-003").units
+        self.assertEqual(
+            [unit["locator"]["section"] for unit in units],
+            ["HEADER", "STATUS", "VERIFIED", "NOT VERIFIED / STILL OPEN", "NEXT STEPS"],
+        )
+        self.assertNotIn(
+            "INCIDENT HANDOVER NOTE",
+            " ".join(unit["text"] for unit in units[1:]),
+        )
+
+    def test_plain_text_is_split_into_parts(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "notes.txt"
+            path.write_text(
+                "\n\n".join(("word " * 200).strip() for _ in range(5)),
+                encoding="utf-8",
+            )
+            parsed = parse_source(
+                Path(folder),
+                {
+                    "source_id": "TXT-1",
+                    "title": "Notes",
+                    "source_type": "transcript",
+                    "file_path": "notes.txt",
+                },
+            )
+            self.assertEqual(
+                [unit["locator"]["section"] for unit in parsed.units],
+                ["Part 1", "Part 2", "Part 3"],
+            )
