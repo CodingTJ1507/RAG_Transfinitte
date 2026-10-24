@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -186,12 +187,7 @@ class RetrievalLogicTests(unittest.TestCase):
         self.assertEqual(actual[0], {"equals": {"path": "incident_id", "value": "INC-1"}})
         self.assertEqual(actual[1], {"equals": {"path": "owner", "value": "payments-team"}})
         self.assertEqual(actual[2], {"in": {"path": "source_type", "value": ["document"]}})
-        self.assertEqual(
-            actual[3]["range"]["gte"],
-            __import__("datetime").datetime.fromisoformat(
-                "2026-10-01T00:00:00+00:00"
-            ),
-        )
+        self.assertEqual(actual[3]["range"]["gte"], datetime(2026, 10, 1, tzinfo=timezone.utc))
 
     def test_metrics_cover_precision_recall_mrr_and_ndcg(self):
         actual = retrieval_metrics(
