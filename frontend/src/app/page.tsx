@@ -7,7 +7,7 @@ import { ChatMessage } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
 import { UploadDrawer } from '../components/UploadDrawer';
 import { CitationModal } from '../components/CitationModal';
-import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
+import { ChatMessage as ChatMessageType, Citation, IngestedFile, IncidentSummary } from '../lib/types';
 import { DEMO_QUESTIONS } from '../lib/demoQuestions';
 import { Plus, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api';
@@ -44,9 +44,9 @@ function mapSourceToFile(source: SourceRecord): IngestedFile {
   };
 }
 
-async function fetchSourceFiles(): Promise<IngestedFile[]> {
+async function fetchSourceFiles(incidentId: string): Promise<IngestedFile[]> {
   const response = await fetch(
-    `${API_BASE_URL}/api/ingest/sources?incident_id=INC-2026-1042`,
+    `${API_BASE_URL}/api/ingest/sources?incident_id=${encodeURIComponent(incidentId)}`,
     { signal: AbortSignal.timeout(30000) },
   );
   if (!response.ok) {
@@ -54,6 +54,15 @@ async function fetchSourceFiles(): Promise<IngestedFile[]> {
   }
   const payload = (await response.json()) as SourceListResponse;
   return payload.sources.map(mapSourceToFile);
+}
+
+async function fetchIncidents(): Promise<IncidentSummary[]> {
+  const response = await fetch(`${API_BASE_URL}/api/ingest/incidents`, { signal: AbortSignal.timeout(30000) });
+  if (!response.ok) {
+    throw new Error('The incident list could not be refreshed.');
+  }
+  const payload = (await response.json()) as { incidents: IncidentSummary[] };
+  return payload.incidents ?? [];
 }
 
 function sourceTypeForFile(file: File): IngestedFile['source_type'] {
@@ -91,21 +100,72 @@ export default function Home() {
   const [ownerFilter, setOwnerFilter] = useState('');
   const [timeStartFilter, setTimeStartFilter] = useState('');
   const [timeEndFilter, setTimeEndFilter] = useState('');
+  const [incidentId, setIncidentId] = useState<string>('INC-2026-1042');
+  const [incidentRestored, setIncidentRestored] = useState<boolean>(false);
+  const [incidents, setIncidents] = useState<IncidentSummary[]>([]);
+  const [prevIncidentId, setPrevIncidentId] = useState<string>(incidentId);
+
+  if (incidentId !== prevIncidentId) {
+    setPrevIncidentId(incidentId);
+    setMessages([]);
+  }
+
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('traceiq.incident') : null;
+    queueMicrotask(() => {
+      if (stored) {
+        setIncidentId(stored);
+      }
+      setIncidentRestored(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (incidentRestored && typeof window !== 'undefined') {
+      localStorage.setItem('traceiq.incident', incidentId);
+    }
+  }, [incidentId, incidentRestored]);
+
+  const refreshIncidents = () => {
+    fetchIncidents().then(setIncidents).catch(() => {});
+  };
 
   const refreshSources = async () => {
-    setIngestedFiles(await fetchSourceFiles());
+    setIngestedFiles(await fetchSourceFiles(incidentId));
   };
 
   useEffect(() => {
+    if (!incidentRestored) return;
     let active = true;
-    // A failed first load just leaves the list empty; the backend may still be starting.
-    fetchSourceFiles()
+    // A failed load just leaves the lists empty; the backend may still be starting.
+    fetchSourceFiles(incidentId)
       .then((files) => { if (active) setIngestedFiles(files); })
+      .catch(() => {});
+    fetchIncidents()
+      .then((rows) => { if (active) setIncidents(rows); })
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, []);
+  }, [incidentRestored, incidentId]);
+
+  const handleNewIncident = () => {
+    const input = window.prompt('Enter new incident ID (e.g. INC-2026-1043):');
+    if (input === null) return;
+    const normalized = input.trim().toUpperCase();
+    if (!/^[A-Z0-9-]{3,40}$/.test(normalized)) {
+      window.alert('Use 3 to 40 letters, digits or -');
+      return;
+    }
+    setIncidentId(normalized);
+  };
+
+  const allIncidents: IncidentSummary[] = [
+    ...incidents,
+    ...(incidents.some((i) => i.incident_id === incidentId)
+      ? []
+      : [{ incident_id: incidentId, source_count: ingestedFiles.length }]),
+  ];
 
   const handleSendMessage = async (query: string, attachedFiles?: string[]) => {
     const userMsgId = `user-${crypto.randomUUID()}`;
@@ -129,7 +189,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query,
-          incident_id: 'INC-2026-1042',
+          incident_id: incidentId,
           source_types: sourceTypeFilter ? [sourceTypeFilter] : undefined,
           version: versionFilter || undefined,
           owner: ownerFilter || undefined,
@@ -243,7 +303,7 @@ export default function Home() {
       const form = new FormData();
       form.append('file', file);
       form.append('source_type', sourceTypeForFile(file));
-      form.append('incident_id', 'INC-2026-1042');
+      form.append('incident_id', incidentId);
       const response = await fetch(`${API_BASE_URL}/api/ingest/upload`, {
         method: 'POST',
         body: form,
@@ -265,6 +325,7 @@ export default function Home() {
         ...previous.filter((existing) => existing.id !== indexedFile.id),
       ]);
     }
+    refreshIncidents();
   };
 
   const handleRemoveFile = async (id: string) => {
@@ -273,6 +334,7 @@ export default function Home() {
     });
     if (response.status === 204 || response.status === 404) {
       setIngestedFiles((prev) => prev.filter((f) => f.id !== id));
+      refreshIncidents();
       return;
     }
     const message = await serviceErrorMessage(
@@ -283,7 +345,7 @@ export default function Home() {
   };
 
   const handleLoadSyntheticPack = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/ingest/batch?incident_id=INC-2026-1042`, {
+    const response = await fetch(`${API_BASE_URL}/api/ingest/batch?incident_id=${encodeURIComponent(incidentId)}`, {
       method: 'POST',
       signal: AbortSignal.timeout(120000),
     });
@@ -294,6 +356,7 @@ export default function Home() {
       ));
     }
     await refreshSources();
+    refreshIncidents();
     setIsUploadOpen(false);
   };
 
@@ -327,6 +390,42 @@ export default function Home() {
               <Plus className="w-4 h-4 text-[#09bec1]" />
               <span>New investigation</span>
             </button>
+
+            {/* Incidents Section */}
+            <div className="px-2 mb-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-medium text-stone-500">Incidents</span>
+                <button
+                  onClick={handleNewIncident}
+                  className="text-[11px] font-semibold text-[#087f82] hover:text-[#162748] flex items-center space-x-1 cursor-pointer"
+                  title="New incident"
+                >
+                  <Plus className="w-3 h-3 text-[#09bec1]" />
+                  <span>New incident</span>
+                </button>
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {allIncidents.map((item) => {
+                  const isSelected = item.incident_id === incidentId;
+                  return (
+                    <button
+                      key={item.incident_id}
+                      onClick={() => setIncidentId(item.incident_id)}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs truncate flex items-center justify-between transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#162748] text-white font-semibold shadow-2xs'
+                          : 'text-stone-700 hover:bg-stone-300/50 font-normal'
+                      }`}
+                    >
+                      <span className="truncate font-mono text-[11px]">{item.incident_id}</span>
+                      <span className={`text-[10px] ml-1.5 shrink-0 ${isSelected ? 'text-[#09bec1]' : 'text-slate-400'}`}>
+                        {item.source_count} {item.source_count === 1 ? 'source' : 'sources'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Recent Chats Section */}
             <div className="px-2">
@@ -523,6 +622,7 @@ export default function Home() {
           onAddFiles={handleAddFiles}
           onRemoveFile={handleRemoveFile}
           onLoadSyntheticPack={handleLoadSyntheticPack}
+          canLoadDemoPack={incidentId === 'INC-2026-1042'}
         />
 
         {/* Citation Detail Inspector */}

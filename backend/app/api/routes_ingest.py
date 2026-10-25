@@ -13,6 +13,7 @@ from app.services.ingestion import (
     get_source_original,
     ingest_dataset,
     ingest_uploaded_file,
+    list_incidents,
     list_sources,
 )
 
@@ -134,6 +135,14 @@ def remove_source(source_id: str) -> Response:
         return Response(status_code=204)
     except HTTPException:
         raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/incidents")
+def get_incidents() -> dict[str, list[dict]]:
+    try:
+        return {"incidents": list_incidents()}
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
