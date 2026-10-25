@@ -330,6 +330,7 @@ def _parse_vtt(path: Path) -> list[dict[str, Any]]:
 
 TXT_HEADING_MAX_LENGTH = 40
 TXT_PART_MAX_CHARS = 2000
+TXT_ITEM = re.compile(r"^(-|\*|\d+\.)\s")
 
 
 def _is_text_heading(line: str) -> bool:
@@ -373,19 +374,35 @@ def _pack_parts(paragraphs: list[tuple[int, str]], limit: int = TXT_PART_MAX_CHA
     return [unit for unit in units if unit]
 
 
+def _section_items(lines: list[tuple[int, str]]) -> list[tuple[int, list[str]]]:
+    """A section's bullet or numbered items with their wrapped lines; plain prose stays one item."""
+    items: list[tuple[int, list[str]]] = []
+    for line_number, text in lines:
+        if TXT_ITEM.match(text) or not items:
+            items.append((line_number, [text]))
+        else:
+            items[-1][1].append(text)
+    return items
+
+
 def _text_sections(content_lines: list[tuple[int, str]]) -> list[dict[str, Any]]:
-    sections: list[tuple[str, int, list[str]]] = []
+    """One unit per item, prefixed with its section, so one note's unrelated points stay searchable apart."""
+    sections: list[tuple[str, list[tuple[int, str]]]] = []
     for line_number, line in content_lines:
         clean = line.strip()
         if not clean:
             continue
         if _is_text_heading(clean):
-            sections.append((clean, line_number, [clean]))
-        elif sections:
-            sections[-1][2].append(clean)
-        else:
-            sections.append(("HEADER", line_number, [clean]))
-    units = [_text_unit(" ".join(texts), {"section": name, "line": start}) for name, start, texts in sections]
+            sections.append((clean, []))
+            continue
+        if not sections:
+            sections.append(("HEADER", []))
+        sections[-1][1].append((line_number, clean))
+    units = [
+        _text_unit(f"{name}: {' '.join(texts)}", {"section": name, "line": start})
+        for name, lines in sections
+        for start, texts in _section_items(lines)
+    ]
     return [unit for unit in units if unit]
 
 
