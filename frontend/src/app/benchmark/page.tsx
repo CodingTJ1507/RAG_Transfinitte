@@ -120,6 +120,7 @@ export default function BenchmarkPage() {
   const runBenchmark = async () => {
     setLoading(true);
     setError(null);
+    setReport(null);
     try {
       const url = `${API_BASE_URL}/api/eval/benchmark?top_k=10${checkAnswers ? '&generate_answers=true' : ''}`;
       const response = await fetch(url, {
@@ -145,6 +146,9 @@ export default function BenchmarkPage() {
       if (err instanceof Error) {
         if (err.name === 'TimeoutError') {
           setError('Benchmark request timed out after 2 minutes. Try running retrieval-only or check server load.');
+        } else if (err instanceof TypeError) {
+          // fetch rejects with a TypeError when the backend cannot be reached at all.
+          setError('Could not reach the backend. Check that it is running, then retry.');
         } else {
           setError(err.message);
         }
