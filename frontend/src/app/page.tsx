@@ -52,9 +52,9 @@ function sourceTypeForFile(file: File): IngestedFile['source_type'] {
   return 'document';
 }
 
-// 503s carry a user-safe reason (e.g. search indexes still building); show it instead of the fallback.
+// 503s and 429s carry a user-safe reason (e.g. search indexes still building or AI quota reached); show it instead of the fallback.
 async function serviceErrorMessage(response: Response, fallback: string): Promise<string> {
-  if (response.status !== 503) return fallback;
+  if (response.status !== 503 && response.status !== 429) return fallback;
   const payload = await response.json().catch(() => null) as { detail?: unknown } | null;
   return typeof payload?.detail === 'string' ? payload.detail : fallback;
 }
