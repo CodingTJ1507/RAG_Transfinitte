@@ -18,6 +18,15 @@ IMAGE_PROMPT = (
     "code, label and trend; do not guess anything not visible) and visible_text "
     "(every readable line exactly as written, top to bottom)."
 )
+# Without a schema the model may return visible_text as one string instead of a list of lines.
+IMAGE_SCHEMA = types.Schema(
+    type=types.Type.OBJECT,
+    properties={
+        "description": types.Schema(type=types.Type.STRING),
+        "visible_text": types.Schema(type=types.Type.ARRAY, items=types.Schema(type=types.Type.STRING)),
+    },
+    required=["description", "visible_text"],
+)
 
 T = TypeVar("T")
 
@@ -94,6 +103,7 @@ def describe_image(data: bytes, mime_type: str) -> dict[str, Any]:
             config=types.GenerateContentConfig(
                 temperature=0,
                 response_mime_type="application/json",
+                response_schema=IMAGE_SCHEMA,
             ),
         ))
         if not response.text:
