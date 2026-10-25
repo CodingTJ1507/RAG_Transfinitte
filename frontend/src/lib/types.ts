@@ -36,6 +36,7 @@ export interface InvestigationReport {
   claims: SupportedClaim[];
   likely_root_cause?: string;
   confidence_score: number;
+  confidence_explanation?: string;
   is_abstention: boolean;
   abstention_reason?: string;
   supporting_evidence: Citation[];
