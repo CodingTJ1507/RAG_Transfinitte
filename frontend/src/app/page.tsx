@@ -20,6 +20,7 @@ interface SourceRecord {
   chunk_count?: number;
   updated_at?: string;
   created_at?: string;
+  ingestion_status?: string;
 }
 
 interface SourceListResponse {
@@ -38,9 +39,30 @@ function mapSourceToFile(source: SourceRecord): IngestedFile {
     source_type: source.source_type,
     size: size ? `${(size / 1024).toFixed(1)} KB` : '—',
     uploadedAt: formatIndexedAt(source.updated_at ?? source.created_at ?? 'Indexed'),
-    status: 'indexed',
+    status: source.ingestion_status === 'indexed' ? 'indexed' : 'error',
     chunkCount: source.chunk_count ?? 0,
   };
+}
+
+async function fetchSourceFiles(incidentId: string): Promise<IngestedFile[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/ingest/sources?incident_id=${encodeURIComponent(incidentId)}`,
+    { signal: AbortSignal.timeout(30000) },
+  );
+  if (!response.ok) {
+    throw new Error('The source list could not be refreshed.');
+  }
+  const payload = (await response.json()) as SourceListResponse;
+  return payload.sources.map(mapSourceToFile);
+}
+
+async function fetchIncidents(): Promise<IncidentSummary[]> {
+  const response = await fetch(`${API_BASE_URL}/api/ingest/incidents`, { signal: AbortSignal.timeout(30000) });
+  if (!response.ok) {
+    throw new Error('The incident list could not be refreshed.');
+  }
+  const payload = (await response.json()) as { incidents: IncidentSummary[] };
+  return payload.incidents ?? [];
 }
 
 function sourceTypeForFile(file: File): IngestedFile['source_type'] {
@@ -104,53 +126,24 @@ export default function Home() {
     }
   }, [incidentId, incidentRestored]);
 
-  const refreshIncidents = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/ingest/incidents`, {
-        signal: AbortSignal.timeout(30000),
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as { incidents: IncidentSummary[] };
-      setIncidents(data.incidents || []);
-    } catch {
-      // Gracefully ignore
-    }
+  const refreshIncidents = () => {
+    fetchIncidents().then(setIncidents).catch(() => {});
   };
 
-  const refreshSources = async (targetIncident = incidentId) => {
-    const sourcesResponse = await fetch(
-      `${API_BASE_URL}/api/ingest/sources?incident_id=${encodeURIComponent(targetIncident)}`,
-      { signal: AbortSignal.timeout(30000) },
-    );
-    if (!sourcesResponse.ok) {
-      throw new Error('The source list could not be refreshed.');
-    }
-    const payload = (await sourcesResponse.json()) as SourceListResponse;
-    setIngestedFiles(payload.sources.map(mapSourceToFile));
+  const refreshSources = async () => {
+    setIngestedFiles(await fetchSourceFiles(incidentId));
   };
 
   useEffect(() => {
     if (!incidentRestored) return;
     let active = true;
-    const load = async () => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/ingest/sources?incident_id=${encodeURIComponent(incidentId)}`,
-          { signal: AbortSignal.timeout(30000) },
-        );
-        if (!response.ok) return;
-        const payload = (await response.json()) as SourceListResponse;
-        if (active) {
-          setIngestedFiles(payload.sources.map(mapSourceToFile));
-        }
-      } catch {
-        // Gracefully ignore
-      }
-      if (active) {
-        void refreshIncidents();
-      }
-    };
-    void load();
+    // A failed load just leaves the lists empty; the backend may still be starting.
+    fetchSourceFiles(incidentId)
+      .then((files) => { if (active) setIngestedFiles(files); })
+      .catch(() => {});
+    fetchIncidents()
+      .then((rows) => { if (active) setIncidents(rows); })
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -332,12 +325,23 @@ export default function Home() {
         ...previous.filter((existing) => existing.id !== indexedFile.id),
       ]);
     }
-    void refreshIncidents();
+    refreshIncidents();
   };
 
-  const handleRemoveFile = (id: string) => {
-    setIngestedFiles((prev) => prev.filter((f) => f.id !== id));
-    void refreshIncidents();
+  const handleRemoveFile = async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/ingest/sources/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    if (response.status === 204 || response.status === 404) {
+      setIngestedFiles((prev) => prev.filter((f) => f.id !== id));
+      refreshIncidents();
+      return;
+    }
+    const message = await serviceErrorMessage(
+      response,
+      'Could not delete the evidence source. Check service readiness.',
+    );
+    throw new Error(message);
   };
 
   const handleLoadSyntheticPack = async () => {
@@ -351,8 +355,8 @@ export default function Home() {
         'Could not index the demo evidence pack. Check backend, Gemini, and Atlas readiness.',
       ));
     }
-    await refreshSources(incidentId);
-    void refreshIncidents();
+    await refreshSources();
+    refreshIncidents();
     setIsUploadOpen(false);
   };
 

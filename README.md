@@ -200,6 +200,7 @@ every chunk; vectors from different models must never share an index.
 | `POST` | `/api/ingest/upload` | Upload one file (`file`, `source_type`, `incident_id`, `owner`) |
 | `GET` | `/api/ingest/sources?incident_id=` | List a project's sources |
 | `GET` | `/api/ingest/sources/{source_id}/original` | Download or view an original source file |
+| `DELETE` | `/api/ingest/sources/{source_id}` | Delete a source and its chunks |
 | `GET` | `/api/ingest/incidents` | List incidents and their source counts |
 | `GET` | `/api/ingest/runs/{run_id}` | One ingestion run's summary |
 | `POST` | `/api/investigate/` | Ask a question, with optional filters |
