@@ -8,6 +8,7 @@ from app.config import settings
 from app.core.database import SearchIndexNotReadyError
 from app.models.schemas import IngestionReport, SourceType
 from app.services.ingestion import (
+    delete_source,
     get_ingestion_run,
     get_source_original,
     ingest_dataset,
@@ -122,3 +123,17 @@ def ingestion_status(run_id: str) -> dict:
     if run is None:
         raise HTTPException(status_code=404, detail="Ingestion run not found")
     return run
+
+
+@router.delete("/sources/{source_id}", status_code=204)
+def remove_source(source_id: str) -> Response:
+    try:
+        deleted = delete_source(source_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Source not found")
+        return Response(status_code=204)
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+

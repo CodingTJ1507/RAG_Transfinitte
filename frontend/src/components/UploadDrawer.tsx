@@ -10,7 +10,7 @@ interface UploadDrawerProps {
   onClose: () => void;
   files: IngestedFile[];
   onAddFiles: (files: File[]) => Promise<void>;
-  onRemoveFile: (id: string) => void;
+  onRemoveFile: (id: string) => void | Promise<void>;
   onLoadSyntheticPack: () => Promise<void>;
 }
 
@@ -29,6 +29,15 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
   const [loadingPack, setLoadingPack] = useState<boolean>(false);
 
   if (!isOpen) return null;
+
+  const handleRemove = async (id: string) => {
+    setUploadError(null);
+    try {
+      await onRemoveFile(id);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Could not remove source.');
+    }
+  };
 
   const handleManualUpload = async (uploadedFiles: File[]) => {
     setUploadError(null);
@@ -89,7 +98,7 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
               Demo Incident Evidence Pack
             </h4>
             <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-              Load the benchmark evidence files for the payment failure incident.
+              Load the 20 evidence files for incident INC-2026-1042.
             </p>
             <button
               onClick={() => void handleLoadPack()}
@@ -177,7 +186,7 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
                 </div>
 
                 <button
-                  onClick={() => onRemoveFile(file.id)}
+                  onClick={() => void handleRemove(file.id)}
                   className="p-1 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Remove"
                 >
