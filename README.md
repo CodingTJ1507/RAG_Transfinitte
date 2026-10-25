@@ -10,7 +10,7 @@ metric graph, meeting transcript and log you gave it, and answers only with clai
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)
 ![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas%20Vector%20Search-47A248?logo=mongodb&logoColor=white)
-![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash-8E75B2?logo=googlegemini&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-3.5%20Flash-8E75B2?logo=googlegemini&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 
@@ -100,7 +100,7 @@ never leave the backend.
 | :--- | :--- |
 | Backend | Python 3.12, FastAPI, Pydantic Settings |
 | Database | MongoDB Atlas: Vector Search (cosine, 768-dim) and Atlas Search (BM25) |
-| Models | Gemini 2.5 Flash (answer and verifier), `gemini-embedding-001` |
+| Models | Gemini 3.5 Flash (answer, verifier and image reading), `gemini-embedding-001` |
 | Parsing | PyMuPDF, python-docx, BeautifulSoup, Pillow |
 | Chunking | LangChain recursive splitter with tiktoken |
 | Frontend | Next.js 16, React 19, Tailwind CSS 4 |
@@ -178,7 +178,7 @@ All settings live in `backend/.env` (see `backend/.env.example`).
 | `MONGODB_VECTOR_INDEX` | `traceiq_vector_index` | Vector Search index name |
 | `MONGODB_SEARCH_INDEX` | `traceiq_search_index` | BM25 index name |
 | `GEMINI_API_KEY` | | Embeddings, answers and verification |
-| `LLM_MODEL` | `gemini-2.5-flash` | Answer and verifier model |
+| `LLM_MODEL` | `gemini-3.5-flash` | Answer and verifier model |
 | `EMBEDDING_MODEL` | `gemini-embedding-001` | Embedding model |
 | `EMBEDDING_DIMENSIONS` | `768` | Must match the vector index |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | `500` / `60` | Tokens per chunk and overlap |

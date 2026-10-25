@@ -52,7 +52,7 @@ def call_with_retries(call: Callable[[], T]) -> T:
             return call()
         except (errors.APIError, httpx.TimeoutException) as exc:
             code = getattr(exc, "code", None)
-            retryable = code in (429, 500, 503) or isinstance(exc, httpx.TimeoutException)
+            retryable = code in (429, 500, 503, 504) or isinstance(exc, httpx.TimeoutException)
             delay = min(float(2 ** attempt), settings.GEMINI_MAX_BACKOFF_SECONDS)
             if not retryable or attempt == settings.GEMINI_MAX_RETRIES or time.monotonic() + delay > deadline:
                 raise
