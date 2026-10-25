@@ -264,11 +264,24 @@ must refer to exact registry chunk IDs. Abstain when evidence is insufficient.""
                 citation_chunk_ids=root_cause_ids,
             ))
 
-    claims = verify_claims(claims, evidence_by_chunk)
-    supported_claims = [
-        claim for claim in claims
-        if claim.verification_status == "verified" and claim.citation_chunk_ids
-    ]
+    try:
+        claims = verify_claims(claims, evidence_by_chunk)
+        verification_failed = False
+    except RuntimeError:
+        logger.warning("Claim verification failed; falling back to unverified claims", exc_info=True)
+        verification_failed = True
+
+    if verification_failed:
+        supported_claims = [
+            claim for claim in claims
+            if claim.classification != "unknown" and claim.citation_chunk_ids
+        ]
+    else:
+        supported_claims = [
+            claim for claim in claims
+            if claim.verification_status == "verified" and claim.citation_chunk_ids
+        ]
+
     if generated["is_abstention"]:
         return _abstain(
             query,
@@ -304,22 +317,32 @@ must refer to exact registry chunk IDs. Abstain when evidence is insufficient.""
         None,
     )
     verified_answer = " ".join(claim.claim for claim in supported_claims)
+
+    uncertainties = [item for item in generated.get("uncertainties", []) if isinstance(item, str)]
+    if verification_failed:
+        confidence_score = 0.0
+        confidence_explanation = "Claims could not be automatically verified; treat them as unchecked."
+        uncertainties.append("Claims could not be automatically verified.")
+    else:
+        confidence_score = len(supported_claims) / len(claims) if claims else 0.0
+        confidence_explanation = (
+            "Claims are independently checked against their cited retrieved text. "
+            "This score is a verification share, not a probability of truth."
+        )
+
     return InvestigationReport(
         query=query,
         answer=verified_answer,
         timeline=_build_timeline(selected),
         claims=claims,
         likely_root_cause=verified_root_cause,
-        confidence_score=len(supported_claims) / len(claims) if claims else 0.0,
-        confidence_explanation=(
-            "Claims are independently checked against their cited retrieved text. "
-            "This score is a verification share, not a probability of truth."
-        ),
+        confidence_score=confidence_score,
+        confidence_explanation=confidence_explanation,
         supporting_evidence=citations,
         conflicting_evidence=conflict_citations,
         recommended_actions=[
             item for item in generated.get("recommended_actions", []) if isinstance(item, str)
         ],
-        uncertainties=[item for item in generated.get("uncertainties", []) if isinstance(item, str)],
+        uncertainties=uncertainties,
         retrieval_diagnostics=run_diagnostics,
     )

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+import re
+
+from fastapi import APIRouter, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from app.api.errors import QUOTA_MESSAGE, is_quota_error
@@ -6,7 +8,9 @@ from app.config import settings
 from app.core.database import SearchIndexNotReadyError
 from app.models.schemas import IngestionReport, SourceType
 from app.services.ingestion import (
+    delete_source,
     get_ingestion_run,
+    get_source_original,
     ingest_dataset,
     ingest_uploaded_file,
     list_sources,
@@ -88,6 +92,28 @@ def list_ingested_sources(incident_id: str | None = Query(default=None)) -> dict
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+@router.get("/sources/{source_id}/original")
+def download_original_source(source_id: str) -> Response:
+    try:
+        result = get_source_original(source_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail="Original file not found")
+        data, content_type, filename = result
+        safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", filename) or "original"
+        return Response(
+            content=data,
+            media_type=content_type,
+            headers={
+                "X-Content-Type-Options": "nosniff",
+                "Content-Disposition": f'inline; filename="{safe_name}"',
+            },
+        )
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
 @router.get("/runs/{run_id}")
 def ingestion_status(run_id: str) -> dict:
     try:
@@ -97,3 +123,17 @@ def ingestion_status(run_id: str) -> dict:
     if run is None:
         raise HTTPException(status_code=404, detail="Ingestion run not found")
     return run
+
+
+@router.delete("/sources/{source_id}", status_code=204)
+def remove_source(source_id: str) -> Response:
+    try:
+        deleted = delete_source(source_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Source not found")
+        return Response(status_code=204)
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
