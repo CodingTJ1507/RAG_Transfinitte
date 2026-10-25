@@ -47,17 +47,12 @@ export const CitationModal: React.FC<CitationModalProps> = ({ citation, onClose 
       if (!response.ok) {
         tab?.close();
         setErrorMessage('Original file unavailable right now');
-        setOpening(false);
         return;
       }
       const blob = await response.blob();
       let url = URL.createObjectURL(blob);
       const contentType = response.headers.get('content-type') || blob.type || '';
-      const locator = citation.metadata?.locator as { page?: number | string } | undefined;
-      const page =
-        locator?.page ??
-        (citation.metadata as { page?: number | string } | undefined)?.page ??
-        citation.location?.match(/Page\s+(\d+)/i)?.[1];
+      const page = (citation.metadata?.locator as { page?: number } | undefined)?.page;
       if (contentType.toLowerCase().includes('application/pdf') && page) {
         url += `#page=${page}`;
       }
