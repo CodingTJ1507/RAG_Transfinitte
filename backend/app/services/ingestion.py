@@ -366,8 +366,6 @@ def delete_source(source_id: str) -> bool:
         sources.delete_one({"source_id": source_id})
         return True
     except Exception as exc:
-        if isinstance(exc, (InvalidId, NoFile)):
-            raise
         logger.exception("Failed to delete source %s", source_id)
         raise RuntimeError(f"Failed to delete source {source_id}") from exc
 

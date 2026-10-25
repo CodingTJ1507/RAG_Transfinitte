@@ -74,3 +74,39 @@ export interface IngestedFile {
   status: 'indexed' | 'processing' | 'error';
   chunkCount: number;
 }
+
+export interface EvaluationCaseResult {
+  question_id: string;
+  category: string;
+  expected_source_ids: string[];
+  retrieved_source_ids: string[];
+  recall_at_k: number;
+  precision_at_k: number;
+  ndcg_at_k: number;
+  reciprocal_rank: number;
+  hit: boolean;
+  abstention_expected: boolean;
+  abstained: boolean | null;
+  citations_valid: boolean | null;
+  faithfulness: number | null;
+  answer_evaluated: boolean;
+  passed: boolean;
+  failure_reasons: string[];
+}
+
+export interface EvaluationReport {
+  status: string;
+  cases_run: number;
+  aggregate: {
+    mean_recall_at_k?: number;
+    mean_reciprocal_rank?: number;
+    hit_rate?: number;
+    mean_precision_at_k?: number;
+    mean_ndcg_at_k?: number;
+    pass_rate?: number;
+    mean_faithfulness?: number;
+    [key: string]: number | undefined;
+  };
+  results: EvaluationCaseResult[];
+}
+

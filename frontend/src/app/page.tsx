@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Header } from '../components/Header';
 import { ChatMessage } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
@@ -9,8 +10,7 @@ import { CitationModal } from '../components/CitationModal';
 import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
 import { DEMO_QUESTIONS } from '../lib/demoQuestions';
 import { Plus, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
+import { API_BASE_URL } from '../lib/api';
 
 interface SourceRecord {
   source_id: string;
@@ -42,6 +42,18 @@ function mapSourceToFile(source: SourceRecord): IngestedFile {
     status: source.ingestion_status === 'indexed' ? 'indexed' : 'error',
     chunkCount: source.chunk_count ?? 0,
   };
+}
+
+async function fetchSourceFiles(): Promise<IngestedFile[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/ingest/sources?incident_id=INC-2026-1042`,
+    { signal: AbortSignal.timeout(30000) },
+  );
+  if (!response.ok) {
+    throw new Error('The source list could not be refreshed.');
+  }
+  const payload = (await response.json()) as SourceListResponse;
+  return payload.sources.map(mapSourceToFile);
 }
 
 function sourceTypeForFile(file: File): IngestedFile['source_type'] {
@@ -81,35 +93,15 @@ export default function Home() {
   const [timeEndFilter, setTimeEndFilter] = useState('');
 
   const refreshSources = async () => {
-    const sourcesResponse = await fetch(
-      `${API_BASE_URL}/api/ingest/sources?incident_id=INC-2026-1042`,
-      { signal: AbortSignal.timeout(30000) },
-    );
-    if (!sourcesResponse.ok) {
-      throw new Error('The source list could not be refreshed.');
-    }
-    const payload = (await sourcesResponse.json()) as SourceListResponse;
-    setIngestedFiles(payload.sources.map(mapSourceToFile));
+    setIngestedFiles(await fetchSourceFiles());
   };
 
   useEffect(() => {
     let active = true;
-    const fetchSources = async () => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/ingest/sources?incident_id=INC-2026-1042`,
-          { signal: AbortSignal.timeout(30000) },
-        );
-        if (!response.ok) return;
-        const payload = (await response.json()) as SourceListResponse;
-        if (active) {
-          setIngestedFiles(payload.sources.map(mapSourceToFile));
-        }
-      } catch {
-        // Gracefully ignore initial load failure if server is starting
-      }
-    };
-    void fetchSources();
+    // A failed first load just leaves the list empty; the backend may still be starting.
+    fetchSourceFiles()
+      .then((files) => { if (active) setIngestedFiles(files); })
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -349,6 +341,15 @@ export default function Home() {
                     {item.label}
                   </button>
                 ))}
+              </div>
+              <div className="pt-2 mt-2 border-t border-[#dde4ec]">
+                <Link
+                  href="/benchmark"
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-stone-300/50 text-xs text-[#162748] font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                >
+                  <span>Benchmark</span>
+                  <span className="text-[10px] text-slate-400 font-mono">/benchmark</span>
+                </Link>
               </div>
             </div>
           </div>
