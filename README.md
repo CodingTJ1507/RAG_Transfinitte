@@ -22,6 +22,7 @@ metric graph, meeting transcript and log you gave it, and answers only with clai
 
 - [Why Concord.ai](#why-concordai)
 - [Features](#features)
+- [Brief checklist](#brief-checklist)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [Demo dataset](#demo-dataset)
@@ -32,9 +33,8 @@ metric graph, meeting transcript and log you gave it, and answers only with clai
 - [Explain vector search](#explain-vector-search)
 - [Tests](#tests)
 - [Project structure](#project-structure)
-- [Roadmap](#roadmap)
+- [Status](#status)
 - [Contributing](#contributing)
-- [Team](#team)
 - [Limitations](#limitations)
 
 ## Why Concord.ai
@@ -48,24 +48,45 @@ nothing verifies, Concord.ai says it does not know.
 ## Features
 
 - **Multi-source ingestion**: PDF, DOCX, Markdown, HTML, TXT, VTT transcripts, JSON and CSV logs,
-  and images, each parsed with its structural locator (page, heading, cue, row, event).
+  and images, each parsed with its structural locator (page and section, heading, cue, row, event).
+  Gemini reads screenshots and dashboards, so their visible text is searchable.
+- **Originals kept in MongoDB**: every file is stored once in GridFS, and a citation's
+  "Open original" shows the real PDF page or screenshot.
 - **Hybrid retrieval**: Atlas Vector Search (semantic), Atlas Search BM25 (keywords) and an
   exact-identifier lookup (error codes, versions, ticket IDs), fused with reciprocal rank fusion.
 - **Grounded answers**: Gemini answers only from a registry of retrieved chunks, and an
   independent Gemini verifier checks every cited claim.
 - **Abstention**: an unanswerable question gets a clear "not enough evidence", never a guess.
+- **Conflicts handled**: each source carries an authority label (observed, reference,
+  discussion, early hypothesis, background), so an early wrong report loses to hard evidence.
 - **Metadata filters**: incident, source type, version, owner and time range, applied inside
   the search, not after it.
-- **Projects**: each incident is its own project; sources are stored once and reused.
+- **Incidents as projects**: pick or create an incident; uploads, deletes and every search stay
+  inside it, and the choice is remembered.
 - **Built-in benchmark**: Recall@k, MRR, nDCG, precision, hit rate and faithfulness on a
-  labelled question set.
+  labelled question set, in the API and on the `/benchmark` page.
+
+## Brief checklist
+
+| The brief asks for | Where it is done |
+| :--- | :--- |
+| Answers from more than one source | Hybrid search over all 20 sources (`retrieval/hybrid_search.py`), Q05 in the demo |
+| Citations that open the originals | GridFS originals (`services/ingestion.py`), `GET /api/ingest/sources/{id}/original`, "Open original" in the citation pop-up |
+| Abstention | Verifier plus abstention in `reasoning/investigator.py`; Q17 to Q20 |
+| Metadata filters (dates, owners, types) | `build_vector_filter` and the Atlas Search filters; dates stored as real dates, owners from covers and services |
+| Hybrid search for exact names and codes | `$vectorSearch` + Atlas Search BM25 + exact identifier lookup, fused with RRF |
+| Test set with expected source IDs | `synthetic_data/evaluation/questions.json` and `expected_sources.json`, 20 questions |
+| Retrieval evaluation | `GET /api/eval/benchmark` and the `/benchmark` page |
+| Explain vector search | `python -m scripts.explain_vector_search` |
+| Multimodal | Images read by Gemini (`describe_image`), with a metadata fallback |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    U[Upload or demo dataset] --> P[Parsers<br/>per source type]
-    P --> C[Chunking<br/>500 tokens, 60 overlap]
+    U[Upload or demo dataset] --> O[(GridFS<br/>original files)]
+    U --> P[Parsers per source type<br/>Gemini reads images]
+    P --> C[Chunking<br/>owner, date, authority labels]
     C --> E[Gemini embeddings<br/>768-dim]
     E --> M[(MongoDB Atlas<br/>sources + chunks)]
     M --> V[Vector index]
@@ -125,8 +146,10 @@ questions. The four demo questions on the home screen each test something differ
 **1. Start a local Atlas** (Vector Search and Atlas Search included):
 
 ```bash
-docker run -d --name concord-mongo -p 27017:27017 mongodb/mongodb-atlas-local:latest
+docker run -d --name concord-mongo -p 27017:27017 -v concord-db:/data/db -v concord-config:/data/configdb mongodb/mongodb-atlas-local:latest
 ```
+
+The two volumes keep your data when the container restarts; next time just `docker start concord-mongo`.
 
 **2. Backend:**
 
@@ -161,6 +184,9 @@ npm run dev
 ```
 
 Open http://localhost:3000. API docs live at http://localhost:8000/docs.
+
+> The free Gemini tier allows about 20 answer calls a day per key for `gemini-3.5-flash`, and one
+> question uses 2 to 3. Embeddings allow 1,000 a day; one full demo import uses about 330.
 
 > Using Atlas cloud instead? Put your `mongodb+srv://` URI in `.env`; the free tier allows the
 > three search indexes this project needs.
@@ -267,29 +293,31 @@ backend/
     retrieval/      vector search, hybrid search, RRF
     reasoning/      query transform and investigator
     services/       Gemini, embeddings, ingestion service
-  scripts/          search-index setup and dataset validator
+  scripts/          search-index setup, explain script, dataset validator
   synthetic_data/   demo incident INC-2026-1042
   tests/            offline test suite
 frontend/
-  src/app/          Next.js pages
+  src/app/          Next.js pages: investigation console and /benchmark
   src/components/   chat, citations, upload drawer
   src/lib/          shared types and demo questions
 docs/               product requirements (TraceIQ_PRD.pdf) and images
 learn_documents/    RAG primer and codebase tour
 ```
 
-## Roadmap
+## Status
 
-Open work is tracked as GitHub issues in the
-[Hackathon submission](https://github.com/CodingTJ1507/RAG_Transfinitte/milestones) milestone:
+Everything in the [Hackathon submission](https://github.com/CodingTJ1507/RAG_Transfinitte/milestones)
+milestone's build work is done and runs locally:
 
-- **Ingestion quality**: HTML and TXT sections, PDF sections, owners, image understanding,
-  real dates, source authority (#14 to #19)
-- **Search insight**: explain plans and `numCandidates` tuning (#20), skip unchanged sources (#22)
-- **Reliability**: bounded Gemini retries, clear rate-limit messages, verifier fallback (#21)
-- **Storage and UI**: originals in GridFS (#23), file list (#24), incidents (#26),
-  benchmark page (#27)
-- **Release**: final evaluation, deployment and demo (#28 to #31)
+- **Ingestion quality**: HTML sections, TXT items, PDF page and section, owners, Gemini image
+  reading, real dates, source authority (#14 to #19)
+- **Search insight**: explain plans and `numCandidates` measured (#20), skip unchanged sources (#22)
+- **Reliability**: bounded Gemini retries, a clear 429 quota message, answers survive a checker
+  failure (#21)
+- **Storage and UI**: originals in GridFS with "Open original" (#23), a real file list and delete
+  (#24), incidents (#26), the benchmark page (#27), claims with their labels and checks (#39)
+
+Not done: a public deployment (#29) and the demo video (#31). The app is run locally for now.
 
 ## Contributing
 
@@ -301,7 +329,8 @@ Open work is tracked as GitHub issues in the
 
 ## Limitations
 
-- Images are indexed by their manifest description until image understanding lands (#17).
+- If Gemini cannot read an image (quota or outage), it is indexed by its manifest description.
+- The free Gemini tier limits answers to about 20 calls a day per key (see Quick start).
 - No authentication yet; run it locally or behind your own gateway.
 - Rank fusion runs in Python, so it works on any Atlas tier without `$rankFusion`.
 - The verifier is a model, not a proof; measure it against human labels before trusting it fully.
