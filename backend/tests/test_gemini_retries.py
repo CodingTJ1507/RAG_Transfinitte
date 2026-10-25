@@ -101,3 +101,16 @@ def test_describe_image_asks_for_a_list_of_lines():
         assert describe_image(b"png", "image/png") == {"description": "d", "visible_text": ["a"]}
     schema = client.models.generate_content.call_args.kwargs["config"].response_schema
     assert schema.properties["visible_text"].type == types.Type.ARRAY
+
+
+def test_504_deadline_is_retried():
+    call = MagicMock(side_effect=[errors.ServerError(504, {"error": {"code": 504, "message": "deadline"}}), "ok"])
+    with patch("time.sleep"):
+        assert call_with_retries(call) == "ok"
+    assert call.call_count == 2
+
+
+def test_default_model_is_available_to_new_keys():
+    from app.config import Settings
+
+    assert Settings.model_fields["LLM_MODEL"].default == "gemini-3.5-flash"

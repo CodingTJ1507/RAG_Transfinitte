@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     MONGODB_SEARCH_INDEX: str = "traceiq_search_index"
 
     GEMINI_API_KEY: str = ""
-    LLM_MODEL: str = "gemini-2.5-flash"
+    LLM_MODEL: str = "gemini-3.5-flash"
     EMBEDDING_MODEL: str = "gemini-embedding-001"
     EMBEDDING_DIMENSIONS: int = 768
     EMBEDDING_BATCH_SIZE: int = 64
