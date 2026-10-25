@@ -1,9 +1,10 @@
-import logging
 import json
+import logging
+from pathlib import Path
 import time
 from typing import Any
-from pathlib import Path
 
+import gridfs
 from pymongo import ASCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -55,6 +56,10 @@ def get_sources_collection() -> Collection[dict[str, Any]]:
 
 def get_chunks_collection() -> Collection[dict[str, Any]]:
     return get_collection(settings.MONGODB_CHUNK_COLLECTION)
+
+
+def get_originals_bucket() -> gridfs.GridFS:
+    return gridfs.GridFS(get_db(), collection="originals")
 
 
 def initialize_indexes() -> None:

@@ -198,6 +198,7 @@ every chunk; vectors from different models must never share an index.
 | `POST` | `/api/ingest/batch?incident_id=` | Import the demo dataset (repeat-safe) |
 | `POST` | `/api/ingest/upload` | Upload one file (`file`, `source_type`, `incident_id`, `owner`) |
 | `GET` | `/api/ingest/sources?incident_id=` | List a project's sources |
+| `GET` | `/api/ingest/sources/{source_id}/original` | Download or view an original source file |
 | `GET` | `/api/ingest/runs/{run_id}` | One ingestion run's summary |
 | `POST` | `/api/investigate/` | Ask a question, with optional filters |
 | `GET` | `/api/eval/benchmark` | Run the benchmark |
