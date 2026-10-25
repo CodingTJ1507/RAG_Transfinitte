@@ -88,3 +88,16 @@ def test_httpx_timeout_is_retried():
 def test_investigation_request_whitespace_only_rejected():
     with pytest.raises(ValueError, match="whitespace"):
         InvestigationRequest(query="   \t\n  ")
+
+
+def test_describe_image_asks_for_a_list_of_lines():
+    from google.genai import types
+
+    from app.services.gemini import describe_image
+
+    client = MagicMock()
+    client.models.generate_content.return_value = MagicMock(text='{"description": "d", "visible_text": ["a"]}')
+    with patch("app.services.gemini.get_gemini_client", return_value=client):
+        assert describe_image(b"png", "image/png") == {"description": "d", "visible_text": ["a"]}
+    schema = client.models.generate_content.call_args.kwargs["config"].response_schema
+    assert schema.properties["visible_text"].type == types.Type.ARRAY
