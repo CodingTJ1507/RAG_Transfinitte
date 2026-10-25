@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from app.api.errors import QUOTA_MESSAGE, is_quota_error
 from app.config import settings
 from app.models.schemas import InvestigationReport, InvestigationRequest
 from app.reasoning.investigator import investigate_query
@@ -62,4 +63,6 @@ def investigate_incident(req: InvestigationRequest) -> InvestigationReport:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
+        if is_quota_error(exc):
+            raise HTTPException(status_code=429, detail=QUOTA_MESSAGE) from exc
         raise HTTPException(status_code=503, detail=str(exc)) from exc
