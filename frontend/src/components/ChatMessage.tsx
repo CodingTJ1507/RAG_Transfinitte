@@ -1,7 +1,6 @@
 'use client';
-
 import React, { useState } from 'react';
-import { ChatMessage as ChatMessageType, Citation } from '../lib/types';
+import { ChatMessage as ChatMessageType, Citation, SupportedClaim } from '../lib/types';
 import { ThinkingAccordion } from './ThinkingAccordion';
 import { InlineCitationBadge, CompactCitationPill } from './CitationCard';
 import { Copy, Check, ThumbsUp, ThumbsDown, Share2, Sparkles, AlertCircle, ShieldAlert, RefreshCw } from 'lucide-react';
@@ -12,6 +11,61 @@ interface ChatMessageProps {
   onInspectCitation: (citation: Citation) => void;
   onRetry?: (query: string) => void;
 }
+
+const renderFindings = (
+  claims: SupportedClaim[],
+  citations: Citation[],
+  onInspectCitation: (citation: Citation) => void,
+) => {
+  const visibleClaims = claims.filter(
+    (claim) =>
+      claim.classification !== 'unknown' &&
+      claim.verification_status !== 'contradicted' &&
+      claim.verification_status !== 'insufficient',
+  );
+
+  if (visibleClaims.length === 0) return null;
+
+  return (
+    <div className="pt-2">
+      <h4 className="font-medium text-xs text-stone-500 uppercase tracking-wider mb-2">
+        Findings
+      </h4>
+      <ul className="space-y-2 text-sm text-stone-700 pl-1">
+        {visibleClaims.map((claim, idx) => {
+          const isConfirmed = claim.classification === 'confirmed';
+          const matchingCitations = citations.filter(
+            (citation) => citation.chunk_id && claim.citation_chunk_ids.includes(citation.chunk_id),
+          );
+          return (
+            <li key={idx} className="flex items-start space-x-2 flex-wrap gap-y-1">
+              <span
+                className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded font-mono shrink-0 ${
+                  isConfirmed
+                    ? 'border border-emerald-300 bg-emerald-50 text-emerald-800'
+                    : 'border border-amber-300 bg-amber-50 text-amber-800'
+                }`}
+              >
+                {isConfirmed ? 'Confirmed' : 'Inference'}
+              </span>
+              <span className="leading-relaxed">{claim.claim}</span>
+              {matchingCitations.map((citation) => (
+                <InlineCitationBadge
+                  key={citation.chunk_id ?? citation.source_id}
+                  citation={citation}
+                  onInspect={onInspectCitation}
+                />
+              ))}
+              {claim.verification_status === 'not_checked' && (
+                <span className="text-[11px] text-stone-400 italic">not checked</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
   message,
@@ -147,13 +201,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             <h3 className="font-semibold text-base text-stone-900">
               Incident Diagnosis & Findings
             </h3>
+            {report.confidence_explanation && (
+              <p className="text-xs text-stone-500 -mt-2">
+                {report.confidence_explanation}
+              </p>
+            )}
             <p className="text-stone-700 leading-relaxed">
               {report.likely_root_cause || report.answer}
               {/* Inline Gemini Citations */}
               {citations
                 .filter((citation) =>
                   (report.claims ?? []).some((claim) =>
-                    claim.verification_status === 'verified'
+                    (claim.verification_status === 'verified' || claim.verification_status === 'not_checked')
                     && claim.citation_chunk_ids.includes(citation.chunk_id ?? ''),
                   ),
                 )
@@ -165,6 +224,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 />
               ))}
             </p>
+
+            {/* Findings List */}
+            {!report.is_abstention && report.claims && renderFindings(report.claims, citations, onInspectCitation)}
 
             {/* Reconstructed Incident Timeline */}
             {report.timeline && report.timeline.length > 0 && (
@@ -207,6 +269,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <li key={idx} className="flex items-baseline space-x-2">
                       <span className="text-stone-400 font-mono text-xs">•</span>
                       <span>{act}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Open Questions */}
+            {report.uncertainties && report.uncertainties.length > 0 && (
+              <div className="pt-2">
+                <h4 className="font-medium text-xs text-stone-500 uppercase tracking-wider mb-2">
+                  Open Questions
+                </h4>
+                <ul className="space-y-1.5 text-sm text-stone-700 pl-1">
+                  {report.uncertainties.map((item, idx) => (
+                    <li key={idx} className="flex items-baseline space-x-2">
+                      <span className="text-stone-400 font-mono text-xs">•</span>
+                      <span>{item}</span>
                     </li>
                   ))}
                 </ul>

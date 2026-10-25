@@ -29,6 +29,7 @@ metric graph, meeting transcript and log you gave it, and answers only with clai
 - [Configuration](#configuration)
 - [API](#api)
 - [Evaluation](#evaluation)
+- [Explain vector search](#explain-vector-search)
 - [Tests](#tests)
 - [Project structure](#project-structure)
 - [Roadmap](#roadmap)
@@ -220,6 +221,23 @@ Retrieval returns `mean_recall_at_k`, `mean_reciprocal_rank`, `hit_rate`, `mean_
 `mean_ndcg_at_k` and `pass_rate`. With `generate_answers=true` it also checks citation validity,
 abstention and `mean_faithfulness`. The question set covers exact identifiers, semantic,
 multi-source, conflicting-source and unanswerable cases.
+
+## Explain vector search
+
+Inspect the `$vectorSearch` execution plan and evaluate the effect of `numCandidates` on latency and recall overlap:
+
+```bash
+cd backend
+python -m scripts.explain_vector_search "Why did payments fail?" --top-k 10 --incident INC-2026-1042 --num-candidates 150 300 600
+```
+
+| Column | Meaning |
+| :--- | :--- |
+| `numCandidates` | Number of nearest-neighbor candidates considered by HNSW during vector search |
+| `Time (ms)` | Aggregation execution wall-clock time in milliseconds |
+| `Results` | Number of retrieved chunks matching the query and filter constraints |
+| `Overlap vs Max` | Fraction of returned chunk IDs that match the highest tested `numCandidates` baseline |
+| `Explain JSON` | Path to the full execution plan JSON saved under `backend/eval_results/` |
 
 ## Tests
 
