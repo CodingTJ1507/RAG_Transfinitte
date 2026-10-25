@@ -37,16 +37,17 @@ class HtmlSectionTests(unittest.TestCase):
 
 
 class TextSectionTests(unittest.TestCase):
-    def test_handover_note_has_one_unit_per_section(self):
+    def test_handover_note_has_one_unit_per_item(self):
         units = parse_demo("TRN-003").units
         self.assertEqual(
-            [unit["locator"]["section"] for unit in units],
+            list(dict.fromkeys(unit["locator"]["section"] for unit in units)),
             ["HEADER", "STATUS", "VERIFIED", "NOT VERIFIED / STILL OPEN", "NEXT STEPS"],
         )
-        self.assertNotIn(
-            "INCIDENT HANDOVER NOTE",
-            " ".join(unit["text"] for unit in units[1:]),
-        )
+        open_items = [unit["text"] for unit in units if unit["locator"]["section"] == "NOT VERIFIED / STILL OPEN"]
+        self.assertEqual(len(open_items), 4)
+        self.assertTrue(all(text.startswith("NOT VERIFIED / STILL OPEN: - ") for text in open_items))
+        self.assertTrue(any("lost revenue" in text and "allow_aliases" not in text for text in open_items))
+        self.assertNotIn("INCIDENT HANDOVER NOTE", " ".join(unit["text"] for unit in units))
 
     def test_plain_text_is_split_into_parts(self):
         with tempfile.TemporaryDirectory() as folder:
