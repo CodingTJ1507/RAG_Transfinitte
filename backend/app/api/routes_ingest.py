@@ -3,6 +3,7 @@ import re
 from fastapi import APIRouter, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
+from app.api.errors import QUOTA_MESSAGE, is_quota_error
 from app.config import settings
 from app.core.database import SearchIndexNotReadyError
 from app.models.schemas import IngestionReport, SourceType
@@ -33,6 +34,8 @@ def ingest_evidence_pack(incident_id: str | None = Query(default=None)) -> Inges
     except TimeoutError as exc:
         raise _timeout_error(exc) from exc
     except RuntimeError as exc:
+        if is_quota_error(exc):
+            raise HTTPException(status_code=429, detail=QUOTA_MESSAGE) from exc
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
@@ -72,6 +75,8 @@ async def upload_evidence_file(
     except TimeoutError as exc:
         raise _timeout_error(exc) from exc
     except RuntimeError as exc:
+        if is_quota_error(exc):
+            raise HTTPException(status_code=429, detail=QUOTA_MESSAGE) from exc
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     finally:
         await file.close()
