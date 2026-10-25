@@ -110,6 +110,7 @@ def chunk_evidence_units(
                 "locator": locator,
                 "incident_id": source.get("incident_id"),
                 "owner": owner,
+                "authority": source.get("authority"),
                 "version": source.get("version"),
                 "timestamp": timestamp,
                 "source_hash": source.get("source_hash"),

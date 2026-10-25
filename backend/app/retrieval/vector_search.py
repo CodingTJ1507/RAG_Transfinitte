@@ -85,6 +85,7 @@ def citation_from_document(document: dict[str, Any], score: float | None = None)
     metadata = {
         "incident_id": document.get("incident_id"),
         "owner": document.get("owner"),
+        "authority": document.get("authority"),
         "version": document.get("version"),
         "content_hash": document.get("content_hash"),
         "timestamp": citation_timestamp,

@@ -500,6 +500,23 @@ def _source_owner(source: dict[str, Any], suffix: str, units: list[dict[str, Any
     return "Unassigned"
 
 
+def _source_authority(source: dict[str, Any]) -> str:
+    """How far the evidence can be trusted, from the manifest tags and source type (first rule wins)."""
+    tags = set(source.get("tags") or [])
+    source_type = source.get("source_type")
+    if tags & {"hypothesis", "initial-report"}:
+        return "early_hypothesis"
+    if "background" in tags:
+        return "background"
+    if source_type in {"structured", "structured_record"}:
+        return "observed"
+    if source_type == "image":
+        return "reference" if "architecture" in tags else "observed"
+    if source_type == "transcript":
+        return "discussion"
+    return "reference"
+
+
 def _read_image(path: Path, suffix: str) -> dict[str, Any] | None:
     if not settings.IMAGE_ANALYSIS_ENABLED:
         return None
@@ -568,6 +585,7 @@ def parse_source(root: Path, source: dict[str, Any]) -> ParsedSource:
         "source_hash": source_hash,
         "size_bytes": path.stat().st_size,
         "owner": _source_owner(source, suffix, units),
+        "authority": _source_authority(source),
         "analysis_status": (
             (
                 "vision_analyzed"

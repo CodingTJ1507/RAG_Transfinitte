@@ -265,3 +265,20 @@ class EdgeCaseTests(unittest.TestCase):
                                                 "source_type": "webpage"}).units
         text = next(unit["text"] for unit in units if unit["locator"]["html_id"] == "a")
         self.assertEqual((text.count("nested once"), text.count("quoted")), (1, 1))
+
+
+class AuthorityTests(unittest.TestCase):
+    def test_demo_source_authority(self):
+        expected = {"DOC-005": "early_hypothesis", "WEB-002": "background", "REC-001": "observed",
+                    "IMG-003": "reference", "TRN-002": "discussion", "DOC-002": "reference"}
+        self.assertEqual({sid: parse_demo(sid).source["authority"] for sid in expected}, expected)
+
+    def test_chunks_carry_authority(self):
+        parsed = parse_demo("DOC-005")
+        chunks = chunk_evidence_units(parsed.units, {**parsed.source, "source_type": "document"})
+        self.assertTrue(chunks and all(c["authority"] == "early_hypothesis" for c in chunks))
+
+    def test_citation_metadata_carries_authority(self):
+        citation = citation_from_document({"source_id": "DOC-005", "source_type": "document",
+                                           "authority": "early_hypothesis"})
+        self.assertEqual(citation.metadata["authority"], "early_hypothesis")
