@@ -170,3 +170,55 @@ class QuotaTests(unittest.TestCase):
         self.assertEqual(response.status_code, 429)
         self.assertEqual(response.json()["detail"], QUOTA_MESSAGE)
 
+
+class DeleteSourceTests(unittest.TestCase):
+    def test_delete_route(self):
+        with patch("app.api.routes_ingest.delete_source", return_value=True):
+            self.assertEqual(TestClient(app).delete("/api/ingest/sources/UPL-1").status_code, 204)
+        with patch("app.api.routes_ingest.delete_source", return_value=False):
+            self.assertEqual(TestClient(app).delete("/api/ingest/sources/UPL-1").status_code, 404)
+
+    def test_delete_route_runtime_error_returns_503(self):
+        with patch("app.api.routes_ingest.delete_source", side_effect=RuntimeError("Database down")):
+            self.assertEqual(TestClient(app).delete("/api/ingest/sources/UPL-1").status_code, 503)
+
+    def test_delete_removes_chunks_and_record(self):
+        from app.services.ingestion import delete_source
+
+        sources, chunks, bucket = MagicMock(), MagicMock(), MagicMock()
+        sources.find_one.return_value = {"source_id": "UPL-1", "file_id": "6720f0c2a1b2c3d4e5f60718"}
+        sources.count_documents.return_value = 0
+        with patch("app.services.ingestion.get_sources_collection", return_value=sources), \
+             patch("app.services.ingestion.get_chunks_collection", return_value=chunks), \
+             patch("app.services.ingestion.get_originals_bucket", return_value=bucket):
+            self.assertTrue(delete_source("UPL-1"))
+        chunks.delete_many.assert_called_once_with({"source_id": "UPL-1"})
+        sources.delete_one.assert_called_once()
+        bucket.delete.assert_called_once()
+        sources.count_documents.assert_called_once_with(
+            {"file_id": "6720f0c2a1b2c3d4e5f60718", "source_id": {"$ne": "UPL-1"}}
+        )
+
+    def test_delete_source_missing_returns_false(self):
+        from app.services.ingestion import delete_source
+
+        sources = MagicMock()
+        sources.find_one.return_value = None
+        with patch("app.services.ingestion.get_sources_collection", return_value=sources):
+            self.assertFalse(delete_source("MISSING"))
+
+    def test_delete_source_shared_file_id_does_not_delete_from_bucket(self):
+        from app.services.ingestion import delete_source
+
+        sources, chunks, bucket = MagicMock(), MagicMock(), MagicMock()
+        sources.find_one.return_value = {"source_id": "UPL-1", "file_id": "6720f0c2a1b2c3d4e5f60718"}
+        sources.count_documents.return_value = 1
+        with patch("app.services.ingestion.get_sources_collection", return_value=sources), \
+             patch("app.services.ingestion.get_chunks_collection", return_value=chunks), \
+             patch("app.services.ingestion.get_originals_bucket", return_value=bucket):
+            self.assertTrue(delete_source("UPL-1"))
+        chunks.delete_many.assert_called_once_with({"source_id": "UPL-1"})
+        sources.delete_one.assert_called_once()
+        bucket.delete.assert_not_called()
+
+

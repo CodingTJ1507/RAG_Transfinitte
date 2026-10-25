@@ -339,3 +339,33 @@ def get_source_original(source_id: str) -> tuple[bytes, str, str] | None:
 def get_ingestion_run(run_id: str) -> dict[str, Any] | None:
     record = get_collection("ingestion_runs").find_one({"run_id": run_id}, {"_id": 0})
     return record
+
+
+def delete_source(source_id: str) -> bool:
+    try:
+        sources = get_sources_collection()
+        source = sources.find_one({"source_id": source_id})
+        if not source:
+            return False
+
+        chunks = get_chunks_collection()
+        chunks.delete_many({"source_id": source_id})
+
+        file_id = source.get("file_id")
+        if file_id:
+            other_count = sources.count_documents(
+                {"file_id": file_id, "source_id": {"$ne": source_id}}
+            )
+            if other_count == 0:
+                try:
+                    bucket = get_originals_bucket()
+                    bucket.delete(ObjectId(str(file_id)))
+                except (InvalidId, NoFile):
+                    pass
+
+        sources.delete_one({"source_id": source_id})
+        return True
+    except Exception as exc:
+        logger.exception("Failed to delete source %s", source_id)
+        raise RuntimeError(f"Failed to delete source {source_id}") from exc
+
