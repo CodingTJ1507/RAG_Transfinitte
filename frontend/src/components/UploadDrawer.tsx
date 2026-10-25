@@ -12,6 +12,7 @@ interface UploadDrawerProps {
   onAddFiles: (files: File[]) => Promise<void>;
   onRemoveFile: (id: string) => void;
   onLoadSyntheticPack: () => Promise<void>;
+  canLoadDemoPack?: boolean;
 }
 
 export const UploadDrawer: React.FC<UploadDrawerProps> = ({
@@ -21,6 +22,7 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
   onAddFiles,
   onRemoveFile,
   onLoadSyntheticPack,
+  canLoadDemoPack = true,
 }) => {
   const [selectedType, setSelectedType] = useState<SourceType | 'all'>('all');
   const [dragActive, setDragActive] = useState<boolean>(false);
@@ -84,22 +86,24 @@ export const UploadDrawer: React.FC<UploadDrawerProps> = ({
           </div>
 
           {/* Quick Demo Pack Loader */}
-          <div className="mt-4 p-3.5 rounded-xl bg-[#eef2f6] border border-[#dde4ec] shadow-2xs">
-            <h4 className="text-xs font-bold text-[#162748]">
-              Demo Incident Evidence Pack
-            </h4>
-            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-              Load the benchmark evidence files for the payment failure incident.
-            </p>
-            <button
-              onClick={() => void handleLoadPack()}
-              disabled={loadingPack || isUploading}
-              className="mt-2.5 px-3 py-1.5 text-xs font-semibold bg-[#162748] text-white hover:bg-[#1f3660] hover:shadow-[0_0_12px_rgba(9,190,193,0.3)] rounded-lg w-full flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
-            >
-              <FolderSync className="w-3.5 h-3.5 text-[#09bec1]" />
-              <span>{loadingPack ? 'Indexing evidence pack…' : 'Load incident evidence pack'}</span>
-            </button>
-          </div>
+          {canLoadDemoPack && (
+            <div className="mt-4 p-3.5 rounded-xl bg-[#eef2f6] border border-[#dde4ec] shadow-2xs">
+              <h4 className="text-xs font-bold text-[#162748]">
+                Demo Incident Evidence Pack
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                Load the 20 evidence files for incident INC-2026-1042.
+              </p>
+              <button
+                onClick={() => void handleLoadPack()}
+                disabled={loadingPack || isUploading}
+                className="mt-2.5 px-3 py-1.5 text-xs font-semibold bg-[#162748] text-white hover:bg-[#1f3660] hover:shadow-[0_0_12px_rgba(9,190,193,0.3)] rounded-lg w-full flex items-center justify-center space-x-1.5 transition-all cursor-pointer"
+              >
+                <FolderSync className="w-3.5 h-3.5 text-[#09bec1]" />
+                <span>{loadingPack ? 'Indexing evidence pack…' : 'Load incident evidence pack'}</span>
+              </button>
+            </div>
+          )}
 
           {/* Upload Area */}
           <div

@@ -170,3 +170,31 @@ class QuotaTests(unittest.TestCase):
         self.assertEqual(response.status_code, 429)
         self.assertEqual(response.json()["detail"], QUOTA_MESSAGE)
 
+
+class IncidentTests(unittest.TestCase):
+    def test_incidents_route(self):
+        rows = [{"incident_id": "INC-2026-1042", "source_count": 20}]
+        with patch("app.api.routes_ingest.list_incidents", return_value=rows):
+            response = TestClient(app).get("/api/ingest/incidents")
+        self.assertEqual(response.json(), {"incidents": rows})
+
+    def test_incidents_route_runtime_error_returns_503(self):
+        with patch("app.api.routes_ingest.list_incidents", side_effect=RuntimeError("Database down")):
+            response = TestClient(app).get("/api/ingest/incidents")
+        self.assertEqual(response.status_code, 503)
+
+    def test_list_incidents_groups_sources(self):
+        from app.services.ingestion import list_incidents
+
+        sources = MagicMock()
+        sources.aggregate.return_value = [{"_id": "INC-2026-1042", "source_count": 20}]
+        with patch("app.services.ingestion.get_sources_collection", return_value=sources):
+            self.assertEqual(list_incidents(), [{"incident_id": "INC-2026-1042", "source_count": 20}])
+        sources.aggregate.assert_called_once_with(
+            [
+                {"$group": {"_id": "$incident_id", "source_count": {"$sum": 1}}},
+                {"$sort": {"_id": 1}},
+            ]
+        )
+
+

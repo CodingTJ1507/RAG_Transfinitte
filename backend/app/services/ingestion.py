@@ -314,6 +314,23 @@ def list_sources(incident_id: str | None = None) -> list[dict[str, Any]]:
     return list(records)
 
 
+def list_incidents() -> list[dict[str, Any]]:
+    try:
+        pipeline = [
+            {"$group": {"_id": "$incident_id", "source_count": {"$sum": 1}}},
+            {"$sort": {"_id": 1}},
+        ]
+        results = get_sources_collection().aggregate(pipeline)
+        return [
+            {"incident_id": row["_id"], "source_count": row["source_count"]}
+            for row in results
+        ]
+    except Exception as exc:
+        logger.exception("Failed to list incidents")
+        raise RuntimeError("Failed to list incidents") from exc
+
+
+
 def get_source_original(source_id: str) -> tuple[bytes, str, str] | None:
     source = get_sources_collection().find_one(
         {"source_id": source_id},

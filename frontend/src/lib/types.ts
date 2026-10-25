@@ -110,3 +110,9 @@ export interface EvaluationReport {
   results: EvaluationCaseResult[];
 }
 
+export interface IncidentSummary {
+  incident_id: string;
+  source_count: number;
+}
+
+
