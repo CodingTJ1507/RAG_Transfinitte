@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Header } from '../components/Header';
 import { ChatMessage } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
@@ -9,8 +10,7 @@ import { CitationModal } from '../components/CitationModal';
 import { ChatMessage as ChatMessageType, Citation, IngestedFile } from '../lib/types';
 import { DEMO_QUESTIONS } from '../lib/demoQuestions';
 import { Plus, Settings, PanelLeftClose, PanelLeft, Sparkles } from 'lucide-react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
+import { API_BASE_URL } from '../lib/api';
 
 interface SourceRecord {
   source_id: string;
@@ -310,6 +310,15 @@ export default function Home() {
                     {item.label}
                   </button>
                 ))}
+              </div>
+              <div className="pt-2 mt-2 border-t border-[#dde4ec]">
+                <Link
+                  href="/benchmark"
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-stone-300/50 text-xs text-[#162748] font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                >
+                  <span>Benchmark</span>
+                  <span className="text-[10px] text-slate-400 font-mono">/benchmark</span>
+                </Link>
               </div>
             </div>
           </div>

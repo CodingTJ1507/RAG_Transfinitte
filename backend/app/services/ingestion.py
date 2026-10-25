@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from bson import ObjectId
+from bson.errors import InvalidId
+from gridfs.errors import NoFile
 from pymongo import UpdateOne
 from pymongo.errors import DuplicateKeyError
 
@@ -14,6 +17,7 @@ from app.core.database import (
     ensure_retrieval_indexes,
     get_collection,
     get_chunks_collection,
+    get_originals_bucket,
     get_sources_collection,
     initialize_indexes,
 )
@@ -46,6 +50,34 @@ SUPPORTED_UPLOADS = {
 }
 
 
+CONTENT_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+}
+
+
+def _store_original(path: Path, source_id: str, incident_id: str, source_hash: str) -> str:
+    bucket = get_originals_bucket()
+    existing = bucket.find_one({"metadata.sha256": source_hash})
+    if existing:
+        return str(existing._id)
+    content_type = CONTENT_TYPES.get(path.suffix.lower(), "text/plain; charset=utf-8")
+    file_id = bucket.put(
+        path.read_bytes(),
+        filename=path.name,
+        metadata={
+            "source_id": source_id,
+            "incident_id": incident_id,
+            "sha256": source_hash,
+            "content_type": content_type,
+        },
+    )
+    return str(file_id)
+
+
 def _stored_source_type(source_type: str) -> str:
     return "structured_record" if source_type == "structured" else source_type
 
@@ -54,10 +86,13 @@ def _index_source(root: Path, entry: dict[str, Any]) -> tuple[str, int, int]:
     source_id = str(entry.get("source_id", ""))
     path = _safe_source_path(root, entry["file_path"])
     source_hash = _source_hash(path, entry.get("sha256"))
+    incident_id = str(entry.get("incident_id") or "")
+
+    file_id = _store_original(path, source_id, incident_id, source_hash)
 
     existing = get_sources_collection().find_one(
         {"source_id": source_id},
-        {"_id": 0, "source_hash": 1, "ingestion_status": 1, "chunk_count": 1},
+        {"_id": 0, "source_hash": 1, "ingestion_status": 1, "chunk_count": 1, "file_id": 1},
     )
     if (
         existing
@@ -65,6 +100,11 @@ def _index_source(root: Path, entry: dict[str, Any]) -> tuple[str, int, int]:
         and existing.get("ingestion_status") == "indexed"
         and existing.get("chunk_count", 0) > 0
     ):
+        if not existing.get("file_id"):
+            get_sources_collection().update_one(
+                {"source_id": source_id},
+                {"$set": {"file_id": file_id}},
+            )
         return "skipped", 0, 0
 
     parsed = parse_source(root, entry)
@@ -90,6 +130,7 @@ def _index_source(root: Path, entry: dict[str, Any]) -> tuple[str, int, int]:
             {"source_id": source_id},
             {"$set": {
                 **source,
+                "file_id": file_id,
                 "ingestion_status": "indexed",
                 "chunk_count": len(prepared),
             }},
@@ -138,6 +179,7 @@ def _index_source(root: Path, entry: dict[str, Any]) -> tuple[str, int, int]:
     source["ingestion_status"] = "indexed"
     source["chunk_count"] = len(prepared)
     source["updated_at"] = updated_at
+    source["file_id"] = file_id
     sources.replace_one({"source_id": source_id}, source, upsert=True)
     chunks_collection.delete_many({
         "source_id": source_id,
@@ -270,6 +312,28 @@ def list_sources(incident_id: str | None = None) -> list[dict[str, Any]]:
     query = {"incident_id": incident_id} if incident_id else {}
     records = get_sources_collection().find(query, {"_id": 0}).sort("source_id", 1)
     return list(records)
+
+
+def get_source_original(source_id: str) -> tuple[bytes, str, str] | None:
+    source = get_sources_collection().find_one(
+        {"source_id": source_id},
+        {"_id": 0, "file_id": 1, "title": 1, "file_path": 1},
+    )
+    if not source or not source.get("file_id"):
+        return None
+    try:
+        bucket = get_originals_bucket()
+        grid_out = bucket.get(ObjectId(str(source["file_id"])))
+        data = grid_out.read()
+        metadata = getattr(grid_out, "metadata", {}) or {}
+        content_type = metadata.get("content_type") or "application/octet-stream"
+        filename = getattr(grid_out, "filename", None) or Path(source.get("file_path", "original")).name
+        return data, content_type, filename
+    except (InvalidId, NoFile):
+        return None
+    except Exception as exc:
+        logger.exception("Failed to retrieve original file for source %s", source_id)
+        raise RuntimeError(f"Failed to retrieve original file for source {source_id}") from exc
 
 
 def get_ingestion_run(run_id: str) -> dict[str, Any] | None:

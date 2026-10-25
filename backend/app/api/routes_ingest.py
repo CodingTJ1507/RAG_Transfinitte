@@ -1,4 +1,6 @@
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+import re
+
+from fastapi import APIRouter, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from app.api.errors import QUOTA_MESSAGE, is_quota_error
@@ -7,6 +9,7 @@ from app.core.database import SearchIndexNotReadyError
 from app.models.schemas import IngestionReport, SourceType
 from app.services.ingestion import (
     get_ingestion_run,
+    get_source_original,
     ingest_dataset,
     ingest_uploaded_file,
     list_sources,
@@ -84,6 +87,28 @@ def list_ingested_sources(incident_id: str | None = Query(default=None)) -> dict
     try:
         sources = list_sources(incident_id)
         return {"count": len(sources), "sources": sources}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/sources/{source_id}/original")
+def download_original_source(source_id: str) -> Response:
+    try:
+        result = get_source_original(source_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail="Original file not found")
+        data, content_type, filename = result
+        safe_name = re.sub(r"[^a-zA-Z0-9._-]", "_", filename) or "original"
+        return Response(
+            content=data,
+            media_type=content_type,
+            headers={
+                "X-Content-Type-Options": "nosniff",
+                "Content-Disposition": f'inline; filename="{safe_name}"',
+            },
+        )
+    except HTTPException:
+        raise
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
